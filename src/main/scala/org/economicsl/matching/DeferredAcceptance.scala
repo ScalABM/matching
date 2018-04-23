@@ -71,4 +71,61 @@ object DeferredAcceptance {
 
   }
 
+  /** Parallel implementation of the Gale-Shapley Deferred-Acceptance algorithm.
+    *
+    * @param as
+    * @param bs
+    * @tparam A
+    * @tparam B
+    * @return a tuple whose first element is a tuple containing the set of unmatched `A` instances and the set of
+    *         unmatched `B` instances, the second element of the tuple is a stable matching between `A` and `B` instances.
+    */
+  def parStableMatching[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]]
+  (as: ParHashSet[A], bs: ParHashSet[B])
+  : (ParUnMatched[A, B], ParMatched[A, B]) = {
+
+    @annotation.tailrec
+    def accummulate(unMatchedAs: ParHashSet[A], unMatchedBs: ParHashSet[B], matches: ParHashMap[A, B]): (ParUnMatched[A, B], ParMatched[A, B]) = {
+      if (unMatchedAs.isEmpty || unMatchedBs.isEmpty) {
+        ((unMatchedAs, unMatchedBs), matches)
+      } else {
+        val additionalMatches = unMatchedAs.aggregate(ParHashMap.empty[B, ParHashSet[A]])(
+          { case (potentialMatches, a) =>
+            val acceptableBs = unMatchedBs.filter(a.isAcceptable)
+            if (acceptableBs.isEmpty) {  // N.B. an acceptable B may not exist!
+              potentialMatches
+            } else {  // N.B. same B could be most preferred for multiple As!
+            val mostPreferredB = acceptableBs.max(a.ordering)
+              val potentialAs = potentialMatches.getOrElse(mostPreferredB, ParHashSet.empty[A])
+              potentialMatches.updated(mostPreferredB, potentialAs + a)
+            }
+          }, { case (potentialMatches, morePotentialMatches) =>
+            potentialMatches.merged(morePotentialMatches)({ case ((k, v1), (_, v2)) => (k, v1 ++ v2) })
+          }
+        ).aggregate(ParHashMap.empty[A, B])(
+          { case (finalizedMatches, (b, potentialAs)) =>
+            val acceptableAs = potentialAs.filter(b.isAcceptable)
+            if (acceptableAs.isEmpty) {  // N.B. an acceptable A may not exist!
+              finalizedMatches
+            } else {
+              finalizedMatches + (acceptableAs.max(b.ordering) -> b)
+            }
+          }, { case (finalizedMatches, moreFinalizedMatches) =>
+            finalizedMatches ++ moreFinalizedMatches
+          }
+        )
+
+        if (additionalMatches.isEmpty) {
+          ((unMatchedAs, unMatchedBs), matches)
+        } else {
+          val remainingUnMatchedAs = unMatchedAs.diff(additionalMatches.keySet)
+          val remainingUnMatchedBs = unMatchedBs.diff(additionalMatches.values.toSet)
+          accummulate(remainingUnMatchedAs, remainingUnMatchedBs, matches ++ additionalMatches)
+        }
+      }
+    }
+    accummulate(as, bs, ParHashMap.empty[A, B])
+
+  }
+
 }
