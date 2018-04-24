@@ -15,14 +15,15 @@ limitations under the License.
 */
 package org.economicsl.matching
 
+import scala.collection.{GenMap, GenSet}
 import scala.collection.immutable.{HashMap, HashSet}
 
 
 object DeferredAcceptance {
 
   // define a couple of type aliases to simplify the API...UnMatched is a State monad!
-  type UnMatched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = (HashSet[A], HashSet[B])
-  type Matched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = HashMap[A, B]
+  type UnMatched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = (GenSet[A], GenSet[B])
+  type Matched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = GenMap[A, B]
 
   /** Stable Matching via Gale-Shapley Deferred-Acceptance algorithm.
     *
@@ -38,11 +39,11 @@ object DeferredAcceptance {
                     : (UnMatched[A, B], Matched[A, B]) = {
 
     @annotation.tailrec
-    def accummulate(unMatchedAs: HashSet[A], unMatchedBs: HashSet[B], matches: HashMap[A, B]): (UnMatched[A, B], Matched[A, B]) = {
+    def accummulate(unMatchedAs: GenSet[A], unMatchedBs: GenSet[B], matches: GenMap[A, B]): (UnMatched[A, B], Matched[A, B]) = {
       if (unMatchedAs.isEmpty || unMatchedBs.isEmpty) {
         ((unMatchedAs, unMatchedBs), matches)
       } else {
-        val additionalMatches = unMatchedAs.aggregate(HashMap.empty[B, HashSet[A]])(
+        val additionalMatches = unMatchedAs.aggregate(matches.empty[B, GenSet[A]])(
           { case (potentialMatches, a) =>
             val acceptableBs = unMatchedBs.filter(a.isAcceptable)
             if (acceptableBs.isEmpty) {  // N.B. an acceptable B may not exist!
@@ -55,7 +56,7 @@ object DeferredAcceptance {
           }, { case (potentialMatches, morePotentialMatches) =>
             potentialMatches.merged(morePotentialMatches)({ case ((k, v1), (_, v2)) => (k, v1 ++ v2) })
           }
-        ).aggregate(HashMap.empty[A, B])(
+        ).aggregate(matches.empty[A, B])(
           { case (finalizedMatches, (b, potentialAs)) =>
             val acceptableAs = potentialAs.filter(b.isAcceptable)
             if (acceptableAs.isEmpty) {  // N.B. an acceptable A may not exist!
@@ -77,7 +78,7 @@ object DeferredAcceptance {
         }
       }
     }
-    accummulate(as, bs, HashMap.empty[A, B])
+    accummulate(as, bs, matches.empty[A, B])
 
   }
 
