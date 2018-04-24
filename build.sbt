@@ -41,6 +41,7 @@ lazy val core = (project in file(".")).
   settings(inConfig(Functional)(Defaults.testSettings): _*).
   settings(
     libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.14.0" % "functional, test",
       "org.scalatest" %% "scalatest" % "3.0.1" % "functional, test",
       "com.typesafe.akka" %% "akka-testkit" % "2.5.6" % "functional, test"
     ),

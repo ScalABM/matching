@@ -3,6 +3,7 @@ import org.economicsl.matching.{DeferredAcceptance, House, HouseListing, HousePu
 
 import scala.collection.immutable.HashSet
 
+
 val purchaseOffers = HashSet(
   HousePurchaseOffer(1, 1, Price(100)),
   HousePurchaseOffer(2, 2, Price(105)),
@@ -16,4 +17,4 @@ val listings = HashSet(
 )
 
 
-DeferredAcceptance.stableMatching(purchaseOffers, listings)
+val ((_, _), matches) = DeferredAcceptance.stableMatching(purchaseOffers, listings)
