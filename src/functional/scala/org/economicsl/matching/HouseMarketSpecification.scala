@@ -16,12 +16,14 @@ limitations under the License.
 package org.economicsl.matching
 
 import org.economicsl.core.Price
-import org.scalacheck.Gen
+import org.scalacheck.{Gen, Properties}
 
 import scala.collection.immutable.HashSet
 
 
-object HouseMarketSimulation extends App {
+object HouseMarketSpecification extends Properties("housing-market") {
+
+  import org.scalacheck.Prop._
 
   // this generator should exist in esl-core!
   val priceGen: Gen[Price] = {
@@ -54,17 +56,18 @@ object HouseMarketSimulation extends App {
     } yield HousePurchaseOffer(id, issuer, price)
   }
 
-  val housePurchaseOffers = Gen.containerOfN[HashSet, HousePurchaseOffer](1000, housePurchaseOfferGen)
+  val housePurchaseOffers: Gen[HashSet[HousePurchaseOffer]] = {
+    Gen.containerOfN[HashSet, HousePurchaseOffer](10, housePurchaseOfferGen)
+  }
 
-  val houseListings = Gen.containerOfN[HashSet, HouseListing](1000, houseListingGen)
+  val houseListings: Gen[HashSet[HouseListing]] = {
+    Gen.containerOfN[HashSet, HouseListing](10, houseListingGen)
+  }
 
-  (housePurchaseOffers.sample, houseListings.sample) match {
-    case (Some(purchaseOffers), Some(listings)) =>
-      val ((unMatchedPurchaseOffers, unMatchedListings), matches) = DeferredAcceptance.stableMatching(purchaseOffers, listings)
-      println(s"Number of unmatched home buyers: ${unMatchedPurchaseOffers.size}")
-      println(s"Number of unmatched home sellers: ${unMatchedListings.size}")
-      println(s"Number of matched buyers and sellers: ${matches.size}")
-    case _ => ???
+  property("incentive-compatibility") = forAll(housePurchaseOffers, houseListings) {
+    case (offers, listings) =>
+      val (_, matches) = DeferredAcceptance.stableMatching(offers, listings)
+      matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
 }
