@@ -16,6 +16,7 @@ limitations under the License.
 package org.economicsl.matching
 
 import scala.collection.immutable.{HashMap, HashSet}
+import scala.collection.parallel.immutable.{ParHashMap, ParHashSet}
 
 
 object DeferredAcceptance {
@@ -23,6 +24,10 @@ object DeferredAcceptance {
   // define a couple of type aliases to simplify the API...UnMatched is a State monad!
   type UnMatched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = (HashSet[A], HashSet[B])
   type Matched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = HashMap[A, B]
+
+  type ParUnMatched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = (ParHashSet[A], ParHashSet[B])
+  type ParMatched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = ParHashMap[A, B]
+
 
   /** Stable Matching via Gale-Shapley Deferred-Acceptance algorithm.
     *
@@ -91,8 +96,8 @@ object DeferredAcceptance {
     *         unmatched `B` instances, the second element of the tuple is a stable matching between `A` and `B` instances.
     */
   def parStableMatching[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]]
-  (as: ParHashSet[A], bs: ParHashSet[B])
-  : (ParUnMatched[A, B], ParMatched[A, B]) = {
+                       (as: ParHashSet[A], bs: ParHashSet[B])
+                       : (ParUnMatched[A, B], ParMatched[A, B]) = {
 
     @annotation.tailrec
     def accummulate(unMatchedAs: ParHashSet[A], unMatchedBs: ParHashSet[B], matches: ParHashMap[A, B]): (ParUnMatched[A, B], ParMatched[A, B]) = {
@@ -107,10 +112,12 @@ object DeferredAcceptance {
             } else {  // N.B. same B could be most preferred for multiple As!
             val mostPreferredB = acceptableBs.max(a.ordering)
               val potentialAs = potentialMatches.getOrElse(mostPreferredB, ParHashSet.empty[A])
-              potentialMatches.updated(mostPreferredB, potentialAs + a)
+              potentialMatches + (mostPreferredB -> (potentialAs + a))
             }
           }, { case (potentialMatches, morePotentialMatches) =>
-            potentialMatches.merged(morePotentialMatches)({ case ((k, v1), (_, v2)) => (k, v1 ++ v2) })
+            potentialMatches.map { case (b, v1) =>
+              (b, v1 ++ morePotentialMatches.getOrElse(b, ParHashSet.empty[A]))
+            }
           }
         ).aggregate(ParHashMap.empty[A, B])(
           { case (finalizedMatches, (b, potentialAs)) =>
