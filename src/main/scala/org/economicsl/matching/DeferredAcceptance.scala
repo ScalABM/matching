@@ -1,7 +1,21 @@
+/*
+Copyright 2018 EconomicSL
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package org.economicsl.matching
 
 import scala.collection.immutable.{HashMap, HashSet}
-import scala.collection.parallel.immutable.{ParHashMap, ParHashSet}
 
 
 object DeferredAcceptance {
@@ -9,10 +23,6 @@ object DeferredAcceptance {
   // define a couple of type aliases to simplify the API...UnMatched is a State monad!
   type UnMatched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = (HashSet[A], HashSet[B])
   type Matched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = HashMap[A, B]
-
-  // define a couple of type aliases to simplify the API...ParUnMatched is a State monad!
-  type ParUnMatched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = (ParHashSet[A], ParHashSet[B])
-  type ParMatched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = ParHashMap[A, B]
 
   /** Stable Matching via Gale-Shapley Deferred-Acceptance algorithm.
     *
