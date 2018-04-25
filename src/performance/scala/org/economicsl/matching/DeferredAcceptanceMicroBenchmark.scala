@@ -9,8 +9,6 @@ import scala.util.Random
 
 object DeferredAcceptanceMicroBenchmark extends Bench.OnlineRegressionReport {
 
-  val sizes: Gen[Int] = Gen.exponential("Number of buyers/sellers.")(factor=2, until=math.pow(2, 11).toInt, from=2)
-
   def randomHouse(): House = {
     House(Random.nextLong(), Random.nextLong())
   }
@@ -47,18 +45,36 @@ object DeferredAcceptanceMicroBenchmark extends Bench.OnlineRegressionReport {
     accummulate(size, HashSet.empty[HouseListing])
   }
 
-  val unMatchedParticipants: Gen[(HashSet[HousePurchaseOffer], HashSet[HouseListing])] = for {
-    size <- sizes
-  } yield {
-    val housePurchaseOffers: HashSet[HousePurchaseOffer] = randomHousePurchaseOffers(size / 2)
-    val houseListings: HashSet[HouseListing] = randomHouseListings(size / 2)
-    (housePurchaseOffers, houseListings)
-  }
 
   performance of "DeferredAcceptance" in {
+
+    val sizes = Gen.exponential("Number of buyers/sellers.")(factor=2, until=math.pow(2, 11).toInt, from=2)
+
+    val unMatchedParticipants = for {
+      size <- sizes
+    } yield {
+      val housePurchaseOffers = randomHousePurchaseOffers(size / 2)
+      val houseListings = randomHouseListings(size / 2)
+      (housePurchaseOffers, houseListings)
+    }
+
+    val parUnMatchedParticipants = for {
+      size <- sizes
+    } yield {
+      val housePurchaseOffers = randomHousePurchaseOffers(size / 2)
+      val houseListings = randomHouseListings(size / 2)
+      (housePurchaseOffers.par, houseListings.par)
+    }
+
     measure method "stableMatching" in {
       using(unMatchedParticipants) in { case (buyers, sellers) =>
         DeferredAcceptance.stableMatching(buyers, sellers)
+      }
+    }
+
+    measure method "parStableMatching" in {
+      using(parUnMatchedParticipants) in { case (buyers, sellers) =>
+        DeferredAcceptance.parStableMatching(buyers, sellers)
       }
     }
   }
