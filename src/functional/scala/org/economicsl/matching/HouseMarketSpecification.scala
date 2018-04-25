@@ -57,16 +57,22 @@ object HouseMarketSpecification extends Properties("housing-market") {
   }
 
   val housePurchaseOffers: Gen[HashSet[HousePurchaseOffer]] = {
-    Gen.containerOfN[HashSet, HousePurchaseOffer](10, housePurchaseOfferGen)
+    Gen.containerOf[HashSet, HousePurchaseOffer](housePurchaseOfferGen)
   }
 
   val houseListings: Gen[HashSet[HouseListing]] = {
-    Gen.containerOfN[HashSet, HouseListing](10, houseListingGen)
+    Gen.containerOf[HashSet, HouseListing](houseListingGen)
   }
 
   property("incentive-compatibility") = forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
       val (_, matches) = DeferredAcceptance.stableMatching(offers, listings)
+      matches.forall{ case (offer, listing) => offer.price >= listing.price }
+  }
+
+  property("par-incentive-compatibility") = forAll(housePurchaseOffers, houseListings) {
+    case (offers, listings) =>
+      val (_, matches) = DeferredAcceptance.parStableMatching(offers.par, listings.par)
       matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
