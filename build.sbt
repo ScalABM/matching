@@ -15,9 +15,6 @@ lazy val commonSettings = Seq(
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases"
   ),
-  javacOptions ++= Seq(
-    "-Xlint:unchecked"
-  ),
   scalacOptions ++= Seq(
     "-deprecation",  // issue warning if we use any deprecated API features
     "-feature",  // tells the compiler to provide information about misused language features
@@ -34,6 +31,9 @@ lazy val commonSettings = Seq(
 lazy val Functional = config("functional") extend Test
 
 
+lazy val Performance = config("performance") extend Test
+
+
 // finally define the full project build settings
 lazy val core = (project in file(".")).
   settings(commonSettings: _*).
@@ -46,4 +46,11 @@ lazy val core = (project in file(".")).
       "com.typesafe.akka" %% "akka-testkit" % "2.5.6" % "functional, test"
     ),
     parallelExecution in Functional := true
+  ).
+  configs(Performance).
+  settings(inConfig(Performance)(Defaults.testSettings): _*).
+  settings(
+    testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
+    libraryDependencies += "com.storm-enroute" %% "scalameter" % "0.8.2" % "performance",
+    parallelExecution in Performance := false
   )
