@@ -15,14 +15,14 @@ limitations under the License.
 */
 package org.economicsl.matching
 
-import scala.collection.immutable.{HashMap, HashSet}
+import scala.collection.immutable.{HashMap, HashSet, TreeSet}
 
 
 object DeferredAcceptance {
 
   // define a couple of type aliases to simplify the API...UnMatched is a State monad!
-  type UnMatched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = (HashSet[A], HashSet[B])
-  type Matched[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]] = HashMap[A, B]
+  type UnMatched[A <: Proposer with Predicate[B], B <: Predicate[A]] = (Set[A], Set[B])
+  type Matched[A <: Proposer with Predicate[B], B <: Predicate[A]] = Map[A, B]
 
   /** Stable Matching via Gale-Shapley Deferred-Acceptance algorithm.
     *
@@ -38,7 +38,7 @@ object DeferredAcceptance {
                     : (UnMatched[A, B], Matched[A, B]) = {
 
     @annotation.tailrec
-    def accummulate(unMatchedAs: HashSet[A], unMatchedBs: HashSet[B], matches: HashMap[A, B]): (UnMatched[A, B], Matched[A, B]) = {
+    def accummulate(unMatchedAs: Set[A], unMatchedBs: Set[B], matches: Map[A, B]): (UnMatched[A, B], Matched[A, B]) = {
       if (unMatchedAs.isEmpty || unMatchedBs.isEmpty) {
         ((unMatchedAs, unMatchedBs), matches)
       } else {
@@ -55,7 +55,7 @@ object DeferredAcceptance {
           }, { case (potentialMatches, morePotentialMatches) =>
             potentialMatches.merged(morePotentialMatches)({ case ((k, v1), (_, v2)) => (k, v1 ++ v2) })
           }
-        ).aggregate(HashMap.empty[A, B])(
+        ).aggregate(Map.empty[A, B])(
           { case (finalizedMatches, (b, potentialAs)) =>
             val acceptableAs = potentialAs.filter(b.isAcceptable)
             if (acceptableAs.isEmpty) {  // N.B. an acceptable A may not exist!
@@ -79,6 +79,55 @@ object DeferredAcceptance {
     }
     accummulate(as, bs, HashMap.empty[A, B])
 
+  }
+
+  def stableMatching[A <: Proposer with Predicate[B], B <: Predicate[A]]
+                    (as: HashSet[A], aPreferences: Ordering[B], bs: HashSet[B], bPreferences: Ordering[A])
+                    : (UnMatched[A, B], Matched[A, B]) = {
+    // common preferences implies we only need to sort once!
+    val orderedBs = TreeSet()(aPreferences) ++ bs
+    val orderedAs = TreeSet()(bPreferences) ++ as
+
+    def accummulate(unMatchedAs: TreeSet[A], unMatchedBs: TreeSet[B], matches: Map[A, B]): (UnMatched[A, B], Matched[A, B]) = {
+      if (unMatchedAs.isEmpty || unMatchedBs.isEmpty) {
+        ((unMatchedAs, unMatchedBs), matches)
+      } else {
+        val additionalMatches = unMatchedAs.aggregate(HashMap.empty[B, TreeSet[A]])(
+          { case (potentialMatches, a) =>
+            val acceptableBs = unMatchedBs.filter(a.isAcceptable)
+            acceptableBs.lastOption match {
+              case Some(mostPreferredB) =>
+                val potentialAs = potentialMatches.getOrElse(mostPreferredB, orderedAs.empty)
+                potentialMatches.updated(mostPreferredB, potentialAs + a)
+              case None =>
+                potentialMatches
+            }
+          }, { case (potentialMatches, morePotentialMatches) =>
+            potentialMatches.merged(morePotentialMatches)({ case ((k, v1), (_, v2)) => (k, v1 ++ v2) })
+          }
+        ).aggregate(Map.empty[A, B])(
+          { case (finalizedMatches, (b, potentialAs)) =>
+            val acceptableAs = potentialAs.filter(b.isAcceptable)
+            if (acceptableAs.isEmpty) {  // N.B. an acceptable A may not exist!
+              finalizedMatches
+            } else {
+              finalizedMatches + (acceptableAs.last -> b)
+            }
+          }, { case (finalizedMatches, moreFinalizedMatches) =>
+            finalizedMatches ++ moreFinalizedMatches
+          }
+        )
+
+        if (additionalMatches.isEmpty) {
+          ((unMatchedAs, unMatchedBs), matches)
+        } else {
+          val remainingUnMatchedAs = unMatchedAs.diff(additionalMatches.keySet)
+          val remainingUnMatchedBs = unMatchedBs.diff(additionalMatches.values.toSet)
+          accummulate(remainingUnMatchedAs, remainingUnMatchedBs, matches ++ additionalMatches)
+        }
+      }
+    }
+    accummulate(orderedAs, orderedBs, HashMap.empty[A, B])
   }
 
 }
