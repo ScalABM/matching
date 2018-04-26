@@ -82,7 +82,8 @@ object DeferredAcceptance {
   }
 
   def stableMatching[A <: Proposer with Predicate[B], B <: Predicate[A]]
-                    (as: HashSet[A], aPreferences: Ordering[B], bs: HashSet[B], bPreferences: Ordering[A])
+                    (as: HashSet[A], bs: HashSet[B])
+                    (implicit aPreferences: Ordering[B], bPreferences: Ordering[A])
                     : (UnMatched[A, B], Matched[A, B]) = {
     // common preferences implies we only need to sort once!
     val orderedBs = TreeSet()(aPreferences) ++ bs
@@ -128,6 +129,51 @@ object DeferredAcceptance {
       }
     }
     accummulate(orderedAs, orderedBs, HashMap.empty[A, B])
+
+  }
+
+  def proposedMatchings[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]]
+                       (as: Set[A], bs: Set[B])
+                       : Set[(A, Option[B])] = {
+    as.map{ a =>
+      val acceptableBs = bs.filter(a.isAcceptable)
+      if (acceptableBs.nonEmpty) (a, Some(acceptableBs.max(a.ordering))) else (a, None)
+    }
+  }
+
+  def preferredMatchings[A <: Proposer with Predicate[B] with Preferences[B], B <: Predicate[A] with Preferences[A]]
+                        (proposedMatchings: Set[(A, Option[B])])
+                        : ((Set[A], Set[B]), Set[(A, B)]) = {
+    proposedMatchings.groupBy{ case (_, mostPreferredB) => mostPreferredB }
+      .mapValues(v => v.flatMap {
+        case (a, Some(b)) => if (b.isAcceptable(a)) Some(a) else None
+        case (a, None) => None }
+      ) // now I have mapping between Option[B] and set of acceptable A's
+      .aggregate((Set.empty[A], Set.empty[B]), Set[(A, B)])(
+       ???, ???
+      )
+  }
+
+
+  // partition possible matchings into unmatched As, unmatched Bs, and matching between As and Bs.
+  private def partition[A, B](preferredMatchings: Set[(Option[A], Option[B])]): ((Set[A], Set[B]), Set[(A, B)]) = {
+
+    type PossibleMatching = (Option[A], Option[B])
+    type Accumulator = ((Set[A], Set[B]), Set[(A, B)])
+
+    def fold: (Accumulator, PossibleMatching) => Accumulator = {
+      case (((as, bs), matchings), (Some(a), Some(b))) => ((as, bs), matchings + (a -> b))
+      case (((as, bs), matchings), (Some(a), None)) => ((as + a, bs), matchings)
+      case (((as, bs), matchings), (None, Some(b))) => ((as, bs + b), matchings)
+      case (accumulator, (None, None)) => accumulator
+    }
+
+    def merge: (Accumulator, Accumulator) => Accumulator = {
+      case (((as, bs), matchings), ((moreAs, moreBs), moreMatchings)) =>
+        ((as ++ moreAs, bs ++ moreBs), matchings ++ moreMatchings)
+    }
+
+    preferredMatchings.aggregate(((Set.empty[A], Set.empty[B]), Set.empty[(A, B)]))(fold, merge)
   }
 
 }

@@ -19,7 +19,7 @@ import org.economicsl.core.Price
 
 
 case class HouseListing(id: Long, issuer: Long, price: Price, house: House)
-  extends Predicate[HousePurchaseOffer] with Preferences[HousePurchaseOffer] {
+  extends Predicate[HousePurchaseOffer] {
 
   /** Boolean function used to determine whether some `HousePurchaseOffer` is acceptable.
     *
@@ -29,7 +29,13 @@ case class HouseListing(id: Long, issuer: Long, price: Price, house: House)
     purchaseOffer => purchaseOffer.price >= price
   }
 
-  /** An `Ordering` defined over `HousePurchaseOffer` instances. */
-  val ordering: Ordering[HousePurchaseOffer] = Ordering.by(purchaseOffer => (purchaseOffer.price, purchaseOffer.id))
+}
+
+
+object HouseListing {
+
+  implicit val ordering: Ordering[HousePurchaseOffer] = {
+    Ordering.by(offer => (offer.price, offer.id))
+  }
 
 }
