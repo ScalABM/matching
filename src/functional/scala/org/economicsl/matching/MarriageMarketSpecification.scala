@@ -22,14 +22,14 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
 
   import org.scalacheck.Prop._
 
-  val manGen: Gen[Man] = {
+  val man: Gen[Man] = {
     for {
       id <- Gen.posNum[Long]
       quality <- Gen.posNum[Long]
     } yield Man(id, quality, Man.womanByQuality)
   }
 
-  val womanGen: Gen[Woman] = {
+  val woman: Gen[Woman] = {
     for {
       id <- Gen.posNum[Long]
       quality <- Gen.posNum[Long]
@@ -40,11 +40,12 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
     Gen.containerOfN[Set, T](n, g)
   }
 
-  def men(n: Int): Gen[Set[Man]] = setOfN(n, manGen)
+  def unMatched: Gen[(Set[Man], Set[Woman])] = Gen.sized {
+    n => setOfN(n, man).flatMap(ms => setOfN(ms.size, woman).map(ws => (ms, ws)))
+      .suchThat { case (ms, ws) => ms.size == ws.size }
+  }
 
-  def women(n: Int): Gen[Set[Woman]] = setOfN(n, womanGen)
-
-  property("all men and women are matched") = forAll(men(2), women(2)) {
+  property("all men and women are matched") = forAll(unMatched) {
     case (ms, ws) =>
       val matches = DeferredAcceptance.weaklyStableMatching(ms, ws)
       (matches.size == ms.size) && (matches.size == ws.size)

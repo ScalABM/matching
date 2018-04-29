@@ -82,6 +82,17 @@ object DeferredAcceptance {
 
   }
 
+  /** Compute a weakly stable matching between two sets of equal size.
+    *
+    * @param ms set of proposers to be matched.
+    * @param ws set of proposees to be matched.
+    * @tparam M the type of proposer.
+    * @tparam W the type of proposee.
+    * @return a weakly stable matching between proposees (`ws`) and proposers (`ms`).
+    * @note A matching will be called "weakly stable" unless there is a pair each of which strictly prefers the other
+    *       to its partner in the matching. This algorithm produces a weakly stable matching in `O(n^2)` time where `n`
+    *       is the size of the inputs sets.
+    */
   def weaklyStableMatching[M <: Proposer with Preferences[W], W <: Preferences[M]](ms: Set[M], ws: Set[W]): Map[W, M] = {
     require(ms.size === ws.size)
 
@@ -92,14 +103,14 @@ object DeferredAcceptance {
           val previouslyRejected = rejected.getOrElse(unMatchedM, Set.empty)
           val mostPreferredW = ws.diff(previouslyRejected).max(unMatchedM.ordering)
           matched.get(mostPreferredW) match {
-            case Some(m) if mostPreferredW.ordering.lt(m, unMatchedM) => // mostPreferredW has received better offer!
+            case Some(m) if mostPreferredW.ordering.lt(m, unMatchedM) => // mostPreferredW has received strictly better offer!
               val updatedUnMatchedMs = unMatchedMs - unMatchedM + m
               val updatedMatched = matched.updated(mostPreferredW, unMatchedM)
               val updatedRejected = rejected.updated(m, rejected.getOrElse(m, Set.empty) + mostPreferredW)
               accumulate(updatedUnMatchedMs, updatedMatched, updatedRejected)
-            case Some(m) if mostPreferredW.ordering.gteq(m, unMatchedM) =>  // mostPreferredW already has better offer!
+            case Some(m) if mostPreferredW.ordering.gteq(m, unMatchedM) =>  // mostPreferredW already has weakly better offer!
               accumulate(unMatchedMs, matched, rejected.updated(unMatchedM, previouslyRejected + mostPreferredW))
-            case None => // mostPreferredW has yet to receive an offer!
+            case None => // mostPreferredW has yet to receive any offer!
               accumulate(unMatchedMs - unMatchedM, matched + (mostPreferredW -> unMatchedM), rejected)
           }
         case None =>
