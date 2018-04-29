@@ -92,6 +92,9 @@ object DeferredAcceptance {
     * @note A matching will be called "weakly stable" unless there is a pair each of which strictly prefers the other
     *       to its partner in the matching. This algorithm produces a weakly stable matching in `O(n^2)` time where `n`
     *       is the size of the inputs sets.
+    *
+    *       From Dubins and Freedman (1981) and Roth (1982) it is a weakly dominant strategy for a type `M` agent to
+    *       state its true preferences.
     */
   def weaklyStableMatching[M <: Proposer with Preferences[W], W <: Preferences[M]](ms: Set[M], ws: Set[W]): Map[W, M] = {
     require(ms.size === ws.size)
@@ -118,6 +121,56 @@ object DeferredAcceptance {
       }
     }
     accumulate(ms, Map.empty, Map.empty)
+  }
+
+  /** Compute a weakly stable matching between two sets.
+    *
+    * @param ms set of proposers to be matched.
+    * @param ws set of proposees to be matched.
+    * @tparam M the type of proposer.
+    * @tparam W the type of proposee.
+    * @return
+    * @note A matching will be called "weakly stable" unless there is a pair each of which strictly prefers the other
+    *       to its partner in the matching. This algorithm produces a weakly stable matching in `O(n^2)` time where `n`
+    *       is the size of the inputs sets.
+    */
+  def weaklyStableMatching[M <: Proposer with Predicate[W] with Preferences[W],
+                           W <: Predicate[M] with Preferences[M]]
+                          (ms: Set[M], ws: Set[W])
+                          : (Set[M], Set[W], Map[W, M]) = {
+
+    @annotation.tailrec
+    def accumulate(unMatched: Set[M], toBeMatched: Set[M], matched: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
+      toBeMatched.headOption match {
+        case Some(toBeMatchedM) =>
+          val previouslyRejected = rejected.getOrElse(toBeMatchedM, Set.empty)
+          val acceptableWs = ws.diff(previouslyRejected)
+          if (acceptableWs.isEmpty) {
+            accumulate(unMatched + toBeMatchedM, toBeMatched - toBeMatchedM, matched, rejected)
+          } else {
+            val mostPreferredW = acceptableWs.max(toBeMatchedM.ordering)
+            matched.get(mostPreferredW) match {
+              case Some(m) if mostPreferredW.ordering.lt(m, toBeMatchedM) => // mostPreferredW has received strictly better offer!
+                val updatedToBeMatchedMs = toBeMatched - toBeMatchedM + m
+                val updatedMatched = matched.updated(mostPreferredW, toBeMatchedM)
+                val updatedRejected = rejected.updated(m, rejected.getOrElse(m, Set.empty) + mostPreferredW)
+                accumulate(unMatched, updatedToBeMatchedMs, updatedMatched, updatedRejected)
+              case Some(m) if mostPreferredW.ordering.gteq(m, toBeMatchedM) => // mostPreferredW already has weakly better offer!
+                val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
+                accumulate(unMatched, toBeMatched, matched, updatedRejected)
+              case None if mostPreferredW.isAcceptable(toBeMatchedM) => // mostPreferredW has yet to receive an acceptable offer!
+                accumulate(unMatched, toBeMatched - toBeMatchedM, matched + (mostPreferredW -> toBeMatchedM), rejected)
+              case None =>  // unMatchedM proposal is not acceptable to mostPreferredW!
+                val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
+                accumulate(unMatched, toBeMatched, matched, updatedRejected)
+            }
+          }
+        case None =>  // all Ms are matched!
+          (toBeMatched, matched.keySet.diff(ws), matched)
+      }
+    }
+    val unacceptableWs = ms.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> ws.filter(m.isAcceptable)))
+    accumulate(Set.empty, ms, Map.empty, unacceptableWs)
   }
 
 }
