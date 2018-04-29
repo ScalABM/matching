@@ -15,6 +15,7 @@ limitations under the License.
 */
 package org.economicsl.matching
 
+import org.scalactic.TripleEquals._
 import scala.collection.immutable.{HashMap, HashSet}
 
 
@@ -79,6 +80,33 @@ object DeferredAcceptance {
     }
     accummulate(as, bs, HashMap.empty[A, B])
 
+  }
+
+  def weaklyStableMatching[M <: Proposer with Preferences[W], W <: Preferences[M]](ms: Set[M], ws: Set[W]): Map[W, M] = {
+    require(ms.size === ws.size)
+
+    @annotation.tailrec
+    def accumulate(unMatchedMs: Set[M], matched: Map[W, M], rejected: Map[M, Set[W]]): Map[W, M] = {
+      unMatchedMs.headOption match {
+        case Some(unMatchedM) =>
+          val previouslyRejected = rejected.getOrElse(unMatchedM, Set.empty)
+          val mostPreferredW = ws.diff(previouslyRejected).max(unMatchedM.ordering)
+          matched.get(mostPreferredW) match {
+            case Some(m) if mostPreferredW.ordering.lt(m, unMatchedM) => // mostPreferredW has received better offer!
+              val updatedUnMatchedMs = unMatchedMs - unMatchedM + m
+              val updatedMatched = matched.updated(mostPreferredW, unMatchedM)
+              val updatedRejected = rejected.updated(m, rejected.getOrElse(m, Set.empty) + mostPreferredW)
+              accumulate(updatedUnMatchedMs, updatedMatched, updatedRejected)
+            case Some(m) if mostPreferredW.ordering.gteq(m, unMatchedM) =>  // mostPreferredW already has better offer!
+              accumulate(unMatchedMs, matched, rejected.updated(unMatchedM, previouslyRejected + mostPreferredW))
+            case None => // mostPreferredW has yet to receive an offer!
+              accumulate(unMatchedMs - unMatchedM, matched + (mostPreferredW -> unMatchedM), rejected)
+          }
+        case None =>
+          matched
+      }
+    }
+    accumulate(ms, Map.empty, Map.empty)
   }
 
 }
