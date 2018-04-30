@@ -96,7 +96,7 @@ object DeferredAcceptance {
     *       From Dubins and Freedman (1981) and Roth (1982) it is a weakly dominant strategy for a type `M` agent to
     *       state its true preferences.
     */
-  def weaklyStableMatching[M <: Proposer with Preferences[W], W <: Preferences[M]](ms: Set[M], ws: Set[W]): (Set[M], Set[W], Map[W, M]) = {
+  def weaklyStableMatching[M <: Proposer with Preferences[W], W <: Preferences[M]](ms: Set[M], ws: Set[W]): (Set[M], Set[W], Matching[W, M]) = {
     require(ms.size === ws.size)
 
     @annotation.tailrec
@@ -139,7 +139,7 @@ object DeferredAcceptance {
   def weaklyStableMatching2[M <: Proposer with Predicate[W] with Preferences[W],
                             W <: Predicate[M] with Preferences[M]]
                            (ms: Set[M], ws: Set[W])
-                           : (Set[M], Set[W], Map[W, M]) = {
+                           : (Set[M], Set[W], Matching[W, M]) = {
 
     @annotation.tailrec
     def accumulate(unMatchedMs: Set[M], toBeMatchedMs: Set[M], matched: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
