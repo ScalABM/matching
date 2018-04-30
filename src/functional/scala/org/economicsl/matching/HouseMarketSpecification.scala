@@ -66,7 +66,7 @@ object HouseMarketSpecification extends Properties("housing-market") {
 
   property("incentive-compatibility") = forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
-      val (_, _, matches) = DeferredAcceptance.weaklyStableMatching2(offers, listings)
+      val ((_, _), matches) = DeferredAcceptance.weaklyStableMatching2[HousePurchaseOffer, HouseListing].run((offers, listings)).value
       matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
