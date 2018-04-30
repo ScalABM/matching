@@ -56,17 +56,17 @@ object HouseMarketSpecification extends Properties("housing-market") {
     } yield HousePurchaseOffer(id, issuer, price)
   }
 
-  val housePurchaseOffers: Gen[HashSet[HousePurchaseOffer]] = {
-    Gen.containerOfN[HashSet, HousePurchaseOffer](10, housePurchaseOfferGen)
+  val housePurchaseOffers: Gen[HashSet[HousePurchaseOffer]] = Gen.sized {
+    n => Gen.containerOfN[HashSet, HousePurchaseOffer](n, housePurchaseOfferGen)
   }
 
-  val houseListings: Gen[HashSet[HouseListing]] = {
-    Gen.containerOfN[HashSet, HouseListing](10, houseListingGen)
+  val houseListings: Gen[HashSet[HouseListing]] = Gen.sized {
+    n => Gen.containerOfN[HashSet, HouseListing](n, houseListingGen)
   }
 
   property("incentive-compatibility") = forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
-      val (_, matches) = DeferredAcceptance.stableMatching(offers, listings)
+      val (_, _, matches) = DeferredAcceptance.weaklyStableMatching2(offers, listings)
       matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 

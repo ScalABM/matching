@@ -47,8 +47,8 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
 
   property("all men and women are matched") = forAll(unMatched) {
     case (ms, ws) =>
-      val matches = DeferredAcceptance.weaklyStableMatching(ms, ws)
-      (matches.size == ms.size) && (matches.size == ws.size)
+      val (unMatchedMs, unMatchedWs, matching) = DeferredAcceptance.weaklyStableMatching(ms, ws)
+      unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == ms.size)
   }
 
 }
