@@ -6,7 +6,7 @@ import org.scalatest.FlatSpec
 class WeaklyStableMatchingSpec extends FlatSpec {
 
   "A weakly stable matching of two empty sets" should "be an empty map" in {
-    val matching = DeferredAcceptance.weaklyStableMatching(Set.empty[Man], Set.empty[Woman])
+    val (_, _, matching) = DeferredAcceptance.weaklyStableMatching(Set.empty[Man], Set.empty[Woman])
     assert(matching.isEmpty)
   }
 

@@ -96,11 +96,11 @@ object DeferredAcceptance {
     *       From Dubins and Freedman (1981) and Roth (1982) it is a weakly dominant strategy for a type `M` agent to
     *       state its true preferences.
     */
-  def weaklyStableMatching[M <: Proposer with Preferences[W], W <: Preferences[M]](ms: Set[M], ws: Set[W]): Map[W, M] = {
+  def weaklyStableMatching[M <: Proposer with Preferences[W], W <: Preferences[M]](ms: Set[M], ws: Set[W]): (Set[M], Set[W], Map[W, M]) = {
     require(ms.size === ws.size)
 
     @annotation.tailrec
-    def accumulate(unMatchedMs: Set[M], matched: Map[W, M], rejected: Map[M, Set[W]]): Map[W, M] = {
+    def accumulate(unMatchedMs: Set[M], matched: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
       unMatchedMs.headOption match {
         case Some(unMatchedM) =>
           val previouslyRejected = rejected.getOrElse(unMatchedM, Set.empty)
@@ -112,12 +112,14 @@ object DeferredAcceptance {
               val updatedRejected = rejected.updated(m, rejected.getOrElse(m, Set.empty) + mostPreferredW)
               accumulate(updatedUnMatchedMs, updatedMatched, updatedRejected)
             case Some(m) if mostPreferredW.ordering.gteq(m, unMatchedM) =>  // mostPreferredW already has weakly better offer!
-              accumulate(unMatchedMs, matched, rejected.updated(unMatchedM, previouslyRejected + mostPreferredW))
+              val updatedRejected = previouslyRejected + mostPreferredW
+              accumulate(unMatchedMs, matched, rejected.updated(unMatchedM, updatedRejected))
             case None => // mostPreferredW has yet to receive any offer!
               accumulate(unMatchedMs - unMatchedM, matched + (mostPreferredW -> unMatchedM), rejected)
           }
         case None =>
-          matched
+          assert(unMatchedMs.isEmpty)
+          (unMatchedMs, ws.diff(matched.keySet), matched)
       }
     }
     accumulate(ms, Map.empty, Map.empty)
@@ -134,39 +136,39 @@ object DeferredAcceptance {
     *       to its partner in the matching. This algorithm produces a weakly stable matching in `O(n^2)` time where `n`
     *       is the size of the inputs sets.
     */
-  def weaklyStableMatching[M <: Proposer with Predicate[W] with Preferences[W],
-                           W <: Predicate[M] with Preferences[M]]
-                          (ms: Set[M], ws: Set[W])
-                          : (Set[M], Set[W], Map[W, M]) = {
+  def weaklyStableMatching2[M <: Proposer with Predicate[W] with Preferences[W],
+                            W <: Predicate[M] with Preferences[M]]
+                           (ms: Set[M], ws: Set[W])
+                           : (Set[M], Set[W], Map[W, M]) = {
 
     @annotation.tailrec
-    def accumulate(unMatched: Set[M], toBeMatched: Set[M], matched: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
-      toBeMatched.headOption match {
+    def accumulate(unMatchedMs: Set[M], toBeMatchedMs: Set[M], matched: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
+      toBeMatchedMs.headOption match {
         case Some(toBeMatchedM) =>
           val previouslyRejected = rejected.getOrElse(toBeMatchedM, Set.empty)
           val acceptableWs = ws.diff(previouslyRejected)
           if (acceptableWs.isEmpty) {
-            accumulate(unMatched + toBeMatchedM, toBeMatched - toBeMatchedM, matched, rejected)
+            accumulate(unMatchedMs + toBeMatchedM, toBeMatchedMs - toBeMatchedM, matched, rejected)
           } else {
             val mostPreferredW = acceptableWs.max(toBeMatchedM.ordering)
             matched.get(mostPreferredW) match {
               case Some(m) if mostPreferredW.ordering.lt(m, toBeMatchedM) => // mostPreferredW has received strictly better offer!
-                val updatedToBeMatchedMs = toBeMatched - toBeMatchedM + m
+                val updatedToBeMatchedMs = toBeMatchedMs - toBeMatchedM + m
                 val updatedMatched = matched.updated(mostPreferredW, toBeMatchedM)
                 val updatedRejected = rejected.updated(m, rejected.getOrElse(m, Set.empty) + mostPreferredW)
-                accumulate(unMatched, updatedToBeMatchedMs, updatedMatched, updatedRejected)
+                accumulate(unMatchedMs, updatedToBeMatchedMs, updatedMatched, updatedRejected)
               case Some(m) if mostPreferredW.ordering.gteq(m, toBeMatchedM) => // mostPreferredW already has weakly better offer!
                 val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
-                accumulate(unMatched, toBeMatched, matched, updatedRejected)
+                accumulate(unMatchedMs, toBeMatchedMs, matched, updatedRejected)
               case None if mostPreferredW.isAcceptable(toBeMatchedM) => // mostPreferredW has yet to receive an acceptable offer!
-                accumulate(unMatched, toBeMatched - toBeMatchedM, matched + (mostPreferredW -> toBeMatchedM), rejected)
+                accumulate(unMatchedMs, toBeMatchedMs - toBeMatchedM, matched + (mostPreferredW -> toBeMatchedM), rejected)
               case None =>  // unMatchedM proposal is not acceptable to mostPreferredW!
                 val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
-                accumulate(unMatched, toBeMatched, matched, updatedRejected)
+                accumulate(unMatchedMs, toBeMatchedMs, matched, updatedRejected)
             }
           }
-        case None =>  // all Ms are matched!
-          (toBeMatched, matched.keySet.diff(ws), matched)
+        case None =>
+          (unMatchedMs, matched.keySet.diff(ws), matched)
       }
     }
     val unacceptableWs = ms.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> ws.filter(m.isAcceptable)))
