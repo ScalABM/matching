@@ -7,7 +7,7 @@ lazy val commonSettings = Seq(
   organizationName := "EconomicSL",
   organizationHomepage := Some(url("https://economicsl.github.io/")),
   libraryDependencies ++= Seq(
-    "org.scalactic" %% "scalactic" % "3.0.1",
+    "org.scalactic" %% "scalactic" % "3.0.5",
     "com.typesafe.akka" %% "akka-actor" % "2.5.6",
     "org.economicsl" %% "esl-core" % "0.1.0-SNAPSHOT"
   ),

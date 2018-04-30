@@ -56,11 +56,18 @@ object DeferredAcceptanceMicroBenchmark extends Bench.OnlineRegressionReport {
   }
 
   performance of "DeferredAcceptance" in {
-    measure method "stableMatching" in {
+//    measure method "stableMatching" in {
+//      using(unMatchedParticipants) in { case (buyers, sellers) =>
+//        DeferredAcceptance.stableMatching(buyers, sellers)
+//      }
+//    }
+
+    measure method "weaklyStableMatching" in {
       using(unMatchedParticipants) in { case (buyers, sellers) =>
-        DeferredAcceptance.stableMatching(buyers, sellers)
+        DeferredAcceptance.weaklyStableMatching(buyers, sellers)
       }
     }
+
   }
 
 }
