@@ -64,7 +64,7 @@ object DeferredAcceptanceMicroBenchmark extends Bench.OnlineRegressionReport {
 
     measure method "weaklyStableMatching" in {
       using(unMatchedParticipants) in { case (buyers, sellers) =>
-        DeferredAcceptance.weaklyStableMatching(buyers, sellers)
+        (new GaleShapleyAlgorithm[HousePurchaseOffer, HouseListing]())(buyers, sellers)
       }
     }
 
