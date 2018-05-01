@@ -17,7 +17,7 @@ package org.economicsl.matching
 
 
 object DeferredAcceptance {
-  
+
   /** Compute a weakly stable matching between two sets.
     *
     * @param ms set of proposers to be matched.
