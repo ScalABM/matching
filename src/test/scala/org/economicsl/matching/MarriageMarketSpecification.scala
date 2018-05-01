@@ -40,9 +40,11 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
     Gen.containerOfN[Set, T](n, g)
   }
 
-  def unMatched: Gen[(Set[Man], Set[Woman])] = Gen.sized {
-    n => setOfN(n, man).flatMap(ms => setOfN(ms.size, woman).map(ws => (ms, ws)))
-      .suchThat { case (ms, ws) => ms.size == ws.size }
+  def unMatched: Gen[(List[Man], List[Woman])] = Gen.sized {
+    size => for {
+      ms <- Gen.containerOfN[List, Man](size, man)
+      ws <- Gen.containerOfN[List, Woman](size, woman)
+    } yield (ms, ws)
   }
 
   def isBlockedBy(matching: Matching[Woman, Man], pair: (Man, Woman)): Boolean = {
@@ -51,13 +53,14 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
 
   property("all men and women are matched") = forAll(unMatched) {
     case (ms, ws) =>
-      val (unMatchedMs, unMatchedWs, matches) = DeferredAcceptance.weaklyStableMatching(ms, ws)
+      println((ms.size, ws.size))
+      val (unMatchedMs, unMatchedWs, matches) = DeferredAcceptance.weaklyStableMatching(ms.toSet, ws.toSet)
       unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matches.size == ms.size)
   }
 
   property("matching should be weakly stable") = forAll(unMatched) {
     case (ms, ws) =>
-      val (_, _, matches) = DeferredAcceptance.weaklyStableMatching(ms, ws)
+      val (_, _, matches) = DeferredAcceptance.weaklyStableMatching(ms.toSet, ws.toSet)
       ms.forall(m => ws.forall(w => !isBlockedBy(matches, (m, w))))
   }
 
