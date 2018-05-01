@@ -66,13 +66,13 @@ object HouseMarketSpecification extends Properties("housing-market") {
 
   property("incentive-compatibility") = forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
-      val (_, _, matching) = DeferredAcceptance.weaklyStableMatching2(offers, listings)
+      val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
       matching.matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
-  property("matching should not have any blocking pairs") =  forAll(housePurchaseOffers, houseListings) {
+  property("matching should stable") =  forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
-      val (_, _, matching) = DeferredAcceptance.weaklyStableMatching2(offers, listings)
+      val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
       offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
   }
 
