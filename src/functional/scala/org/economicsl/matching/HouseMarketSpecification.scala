@@ -74,7 +74,7 @@ object HouseMarketSpecification extends Properties("housing-market") {
       matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
-  property("there should not be any blocking pairs for a matching") =  forAll(housePurchaseOffers, houseListings) {
+  property("matching should not have any blocking pairs") =  forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
       val (_, _, matches) = DeferredAcceptance.weaklyStableMatching2(offers, listings)
       offers.forall(o => listings.forall(l => !isBlockedBy(matches, (o, l))))
