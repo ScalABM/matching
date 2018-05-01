@@ -45,10 +45,20 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
       .suchThat { case (ms, ws) => ms.size == ws.size }
   }
 
+  def isBlockedBy(matching: Matching[Woman, Man], pair: (Man, Woman)): Boolean = {
+    matching.get(pair._2).exists(pair._2.ordering.gt(pair._1, _)) && matching.map(_.swap).get(pair._1).exists(pair._1.ordering.gt(pair._2, _))
+  }
+
   property("all men and women are matched") = forAll(unMatched) {
     case (ms, ws) =>
-      val (unMatchedMs, unMatchedWs, matching) = DeferredAcceptance.weaklyStableMatching(ms, ws)
-      unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == ms.size)
+      val (unMatchedMs, unMatchedWs, matches) = DeferredAcceptance.weaklyStableMatching(ms, ws)
+      unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matches.size == ms.size)
+  }
+
+  property("matching should be weakly stable") = forAll(unMatched) {
+    case (ms, ws) =>
+      val (_, _, matches) = DeferredAcceptance.weaklyStableMatching(ms, ws)
+      ms.forall(m => ws.forall(w => !isBlockedBy(matches, (m, w))))
   }
 
 }
