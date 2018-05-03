@@ -64,20 +64,16 @@ object HouseMarketSpecification extends Properties("housing-market") {
     n => Gen.containerOfN[HashSet, HouseListing](n, houseListingGen)
   }
 
-  def isBlockedBy(matching: Matching[HouseListing, HousePurchaseOffer], pair: (HousePurchaseOffer, HouseListing)): Boolean = {
-    matching.get(pair._2).exists(pair._2.ordering.gt(pair._1, _)) && matching.map(_.swap).get(pair._1).exists(pair._1.ordering.gt(pair._2, _))
-  }
-
   property("incentive-compatibility") = forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
-      val (_, _, matches) = DeferredAcceptance.weaklyStableMatching2(offers, listings)
-      matches.forall{ case (offer, listing) => offer.price >= listing.price }
+      val (_, _, matching) = DeferredAcceptance.weaklyStableMatching2(offers, listings)
+      matching.matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
   property("matching should not have any blocking pairs") =  forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
-      val (_, _, matches) = DeferredAcceptance.weaklyStableMatching2(offers, listings)
-      offers.forall(o => listings.forall(l => !isBlockedBy(matches, (o, l))))
+      val (_, _, matching) = DeferredAcceptance.weaklyStableMatching2(offers, listings)
+      offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
   }
 
 }

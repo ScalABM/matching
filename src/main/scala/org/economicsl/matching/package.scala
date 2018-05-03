@@ -16,9 +16,4 @@ limitations under the License.
 package org.economicsl
 
 
-package object matching {
-
-  // note that `Map[A, B]` is also a function mapping keys of type `A` to values of type `B`.
-  type Matching[A, +B] = Map[A, B]
-
-}
+package object matching
