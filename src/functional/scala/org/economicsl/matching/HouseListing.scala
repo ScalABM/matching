@@ -15,10 +15,12 @@ limitations under the License.
 */
 package org.economicsl.matching
 
+import java.util.UUID
+
 import org.economicsl.core.Price
 
 
-case class HouseListing(id: Long, issuer: Long, price: Price, house: House)
+case class HouseListing(uuid: UUID, issuer: Long, price: Price, house: House)
   extends Predicate[HousePurchaseOffer] with Preferences[HousePurchaseOffer] {
 
   /** Boolean function used to determine whether some `HousePurchaseOffer` is acceptable.
@@ -30,6 +32,6 @@ case class HouseListing(id: Long, issuer: Long, price: Price, house: House)
   }
 
   /** An `Ordering` defined over `HousePurchaseOffer` instances. */
-  val ordering: Ordering[HousePurchaseOffer] = Ordering.by(purchaseOffer => (purchaseOffer.price, purchaseOffer.id))
+  val ordering: Ordering[HousePurchaseOffer] = Ordering.by(purchaseOffer => (purchaseOffer.price, purchaseOffer.uuid))
 
 }

@@ -16,23 +16,24 @@ limitations under the License.
 package org.economicsl.matching
 
 
-object DeferredAcceptance {
+/** Class implementing the deferred acceptance algorithm.
+  *
+  * @tparam M the type of proposer.
+  * @tparam W the type of proposee.
+  */
+class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferences[W], W <: Predicate[M] with Preferences[M]]
+  extends ((Set[M], Set[W]) => ((Set[M], Set[W]), Matching[W, M])) {
 
   /** Compute a weakly stable matching between two sets.
     *
     * @param ms set of proposers to be matched.
     * @param ws set of proposees to be matched.
-    * @tparam M the type of proposer.
-    * @tparam W the type of proposee.
     * @return
     * @note A matching will be called "weakly stable" unless there is a pair each of which strictly prefers the other
     *       to its partner in the matching. This algorithm produces a weakly stable matching in `O(n^2)` time where `n`
     *       is the size of the inputs sets.
     */
-  def weaklyStableMatching2[M <: Proposer with Predicate[W] with Preferences[W],
-                            W <: Predicate[M] with Preferences[M]]
-                           (ms: Set[M], ws: Set[W])
-                           : (Set[M], Set[W], Matching[W, M]) = {
+  def apply(ms: Set[M], ws: Set[W]): ((Set[M], Set[W]), Matching[W, M]) = {
 
     @annotation.tailrec
     def accumulate(unMatchedMs: Set[M], toBeMatchedMs: Set[M], matches: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
@@ -67,7 +68,7 @@ object DeferredAcceptance {
     }
     val unacceptableWs = ms.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> ws.filter(m.isAcceptable)))
     val (unMatchedMs, unMatchedWs, matches) = accumulate(Set.empty, ms, Map.empty, unacceptableWs)
-    (unMatchedMs, unMatchedWs, Matching(matches))
+    ((unMatchedMs, unMatchedWs), Matching(matches))
   }
 
 }

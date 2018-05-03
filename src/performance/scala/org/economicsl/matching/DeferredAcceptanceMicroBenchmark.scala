@@ -1,5 +1,7 @@
 package org.economicsl.matching
 
+import java.util.UUID
+
 import org.economicsl.core.Price
 import org.scalameter.{Bench, Gen}
 
@@ -12,15 +14,15 @@ object DeferredAcceptanceMicroBenchmark extends Bench.OnlineRegressionReport {
   val sizes: Gen[Int] = Gen.exponential("Number of buyers/sellers.")(factor=2, until=math.pow(2, 11).toInt, from=2)
 
   def randomHouse(): House = {
-    House(Random.nextLong(), Random.nextLong())
+    House(UUID.randomUUID(), Random.nextLong())
   }
 
   def randomHouseListing(): HouseListing = {
-    HouseListing(Random.nextLong(), Random.nextLong(), Price(Random.nextLong()), randomHouse())
+    HouseListing(UUID.randomUUID(), Random.nextLong(), Price(Random.nextLong()), randomHouse())
   }
 
   def randomHousePurchaseOffer(): HousePurchaseOffer = {
-    HousePurchaseOffer(Random.nextLong(), Random.nextLong(), Price(Random.nextLong()))
+    HousePurchaseOffer(UUID.randomUUID(), Random.nextLong(), Price(Random.nextLong()))
   }
 
   def randomHousePurchaseOffers(size: Int): HashSet[HousePurchaseOffer] = {
@@ -64,7 +66,7 @@ object DeferredAcceptanceMicroBenchmark extends Bench.OnlineRegressionReport {
 
     measure method "weaklyStableMatching" in {
       using(unMatchedParticipants) in { case (buyers, sellers) =>
-        (new GaleShapleyAlgorithm[HousePurchaseOffer, HouseListing]())(buyers, sellers)
+        (new StableMarriageAlgorithm[HousePurchaseOffer, HouseListing]())(buyers, sellers)
       }
     }
 
