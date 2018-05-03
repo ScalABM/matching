@@ -45,13 +45,13 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
 
   property("all men and women are matched") = forAll(unMatched) {
     case (ms, ws) =>
-      val ((unMatchedMs, unMatchedWs), matching) = (new GaleShapleyAlgorithm[Man, Woman])(ms, ws)
+      val ((unMatchedMs, unMatchedWs), matching) = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
       unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == ms.size)
   }
 
   property("matching should be stable") = forAll(unMatched) {
     case (ms, ws) =>
-      val ((_, _), matching) = (new GaleShapleyAlgorithm[Man, Woman])(ms, ws)
+      val ((_, _), matching) = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
       ms.forall(m => ws.forall(w => !matching.isBlockedBy(w -> m)))
   }
 

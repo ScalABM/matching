@@ -18,20 +18,24 @@ package org.economicsl.matching
 import org.scalactic.TripleEquals._
 
 
-/** Class implementing the Gale-Shapley Algorithm.
+/** Class implementing the Gale-Shapley "stable marriage" Algorithm.
   *
   * @tparam M the type of proposer.
   * @tparam W the type of proposee.
-  * @note The algorithm guarantees that all `M` and `W` are matched and that the matching will be stable.
+  * @note The algorithm guarantees that all `M` and `W` are matched (i.e., all type `W` agents are acceptable matches
+  *       for a type `M` agent and all type `M` agents are acceptable matches for a type `W` agent) and that the
+  *       resulting matching will be stable. Furthermore the resulting matching will be optimal for the proposing type
+  *       `M` agents.
+  * @see For a non-mathematical description of the algorithm see Gale and Shapley's seminal 1962 paper entitled
+  *      [[http://www.eecs.harvard.edu/cs286r/courses/fall09/papers/galeshapley.pdf ''College admissions and the stability of marriage'']].
   */
-class GaleShapleyAlgorithm[M <: Proposer with Preferences[W], W <: Preferences[M]]
+class StableMarriageAlgorithm[M <: Proposer with Preferences[W], W <: Preferences[M]]
   extends ((Set[M], Set[W]) => ((Set[M], Set[W]), Matching[W, M])) {
 
-  /** Compute a weakly stable matching between two sets of equal size.
+  /** Compute a stable matching between two sets of equal size.
     *
     * @param ms set of proposers to be matched.
     * @param ws set of proposees to be matched.
-
     * @return a stable matching between proposees (`ws`) and proposers (`ms`).
     */
   def apply(ms: Set[M], ws: Set[W]): ((Set[M], Set[W]), Matching[W, M]) = {

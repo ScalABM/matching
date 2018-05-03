@@ -34,14 +34,14 @@ object HouseMarketSpecification extends Properties("housing-market") {
 
   val houseGen: Gen[House] = {
     for {
-      id <- Gen.posNum[Long]
+      id <- Gen.uuid
       quality <- Gen.choose(1, 100)
     } yield House(id, quality)
   }
 
   val houseListingGen: Gen[HouseListing] = {
     for {
-      id <- Gen.posNum[Long]
+      id <- Gen.uuid
       issuer <-  Gen.posNum[Long]
       price <-  priceGen
       house <- houseGen
@@ -50,7 +50,7 @@ object HouseMarketSpecification extends Properties("housing-market") {
 
   val housePurchaseOfferGen: Gen[HousePurchaseOffer] = {
     for {
-      id <- Gen.posNum[Long]
+      id <- Gen.uuid
       issuer <- Gen.posNum[Long]
       price <- priceGen
     } yield HousePurchaseOffer(id, issuer, price)
@@ -64,13 +64,13 @@ object HouseMarketSpecification extends Properties("housing-market") {
     n => Gen.containerOfN[HashSet, HouseListing](n, houseListingGen)
   }
 
-  property("incentive-compatibility") = forAll(housePurchaseOffers, houseListings) {
+  property("matching should be incentive-compatible") = forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
       val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
       matching.matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
-  property("matching should stable") =  forAll(housePurchaseOffers, houseListings) {
+  property("matching should be stable") =  forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
       val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
       offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))

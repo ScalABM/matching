@@ -23,17 +23,17 @@ import org.scalatest.FlatSpec
 class WeaklyStableMatchingSpec extends FlatSpec {
 
   "A weakly stable matching of two empty sets" should "be an empty map" in {
-    val ((_, _), matching) = (new GaleShapleyAlgorithm[Man, Woman])(Set.empty[Man], Set.empty[Woman])
+    val ((_, _), matching) = (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set.empty[Woman])
     assert(matching.isEmpty)
   }
 
   it should "throw IllegalArgumentException when attempting to match sets of different size." in {
     assertThrows[IllegalArgumentException] {
-      (new GaleShapleyAlgorithm[Man, Woman])(Set(Man(UUID.randomUUID(), 42, Man.womanByQuality)), Set.empty[Woman])
+      (new StableMarriageAlgorithm[Man, Woman])(Set(Man(UUID.randomUUID(), 42, Man.womanByQuality)), Set.empty[Woman])
     }
 
     assertThrows[IllegalArgumentException] {
-      (new GaleShapleyAlgorithm[Man, Woman])(Set.empty[Man], Set(Woman(UUID.randomUUID(), 42, Woman.manByQuality)))
+      (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set(Woman(UUID.randomUUID(), 42, Woman.manByQuality)))
     }
   }
 
