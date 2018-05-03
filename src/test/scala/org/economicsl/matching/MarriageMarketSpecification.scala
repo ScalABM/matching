@@ -15,6 +15,7 @@ limitations under the License.
 */
 package org.economicsl.matching
 
+import cats.data.State
 import org.scalacheck.{Gen, Properties}
 
 
@@ -43,16 +44,16 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
     } yield (ms, ws)
   }
 
-  property("all men and women are matched") = forAll(unMatched) {
-    case (ms, ws) =>
-      val ((unMatchedMs, unMatchedWs), matching) = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
-      unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == ms.size)
+  property("all men and women are matched") = forAll(unMatched) { unmatched =>
+      val result = State(new StableMarriageAlgorithm[Man, Woman]).run(unmatched)
+      val ((unMatchedMs, unMatchedWs), matching) = result.value
+      unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == unmatched._1.size)
   }
 
-  property("matching should be stable") = forAll(unMatched) {
-    case (ms, ws) =>
-      val ((_, _), matching) = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
-      ms.forall(m => ws.forall(w => !matching.isBlockedBy(w -> m)))
+  property("matching should be stable") = forAll(unMatched) {unmatched =>
+    val result = State(new StableMarriageAlgorithm[Man, Woman]).run(unmatched)
+    val ((_, _), matching) = result.value
+    unmatched._1.forall(m => unmatched._2.forall(w => !matching.isBlockedBy(w -> m)))
   }
 
 }

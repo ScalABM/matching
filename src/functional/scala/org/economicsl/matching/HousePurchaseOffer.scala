@@ -20,7 +20,7 @@ import java.util.UUID
 import org.economicsl.core.Price
 
 
-case class HousePurchaseOffer(uuid: UUID, issuer: Long, price: Price)
+case class HousePurchaseOffer(uuid: UUID, issuer: UUID, price: Price)
   extends Proposer with Predicate[HouseListing] with Preferences[HouseListing] {
 
   /** Boolean function used to determine whether some `HouseListing` is acceptable.

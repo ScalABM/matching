@@ -18,11 +18,11 @@ object DeferredAcceptanceMicroBenchmark extends Bench.OnlineRegressionReport {
   }
 
   def randomHouseListing(): HouseListing = {
-    HouseListing(UUID.randomUUID(), Random.nextLong(), Price(Random.nextLong()), randomHouse())
+    HouseListing(UUID.randomUUID(), UUID.randomUUID(), Price(Random.nextLong()), randomHouse())
   }
 
   def randomHousePurchaseOffer(): HousePurchaseOffer = {
-    HousePurchaseOffer(UUID.randomUUID(), Random.nextLong(), Price(Random.nextLong()))
+    HousePurchaseOffer(UUID.randomUUID(), UUID.randomUUID(), Price(Random.nextLong()))
   }
 
   def randomHousePurchaseOffers(size: Int): HashSet[HousePurchaseOffer] = {
@@ -65,8 +65,8 @@ object DeferredAcceptanceMicroBenchmark extends Bench.OnlineRegressionReport {
 //    }
 
     measure method "weaklyStableMatching" in {
-      using(unMatchedParticipants) in { case (buyers, sellers) =>
-        (new StableMarriageAlgorithm[HousePurchaseOffer, HouseListing]())(buyers, sellers)
+      using(unMatchedParticipants) in { unmatched =>
+        (new StableMarriageAlgorithm[HousePurchaseOffer, HouseListing]())(unmatched)
       }
     }
 

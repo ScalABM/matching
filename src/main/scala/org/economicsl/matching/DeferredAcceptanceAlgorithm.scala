@@ -22,25 +22,24 @@ package org.economicsl.matching
   * @tparam W the type of proposee.
   */
 class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferences[W], W <: Predicate[M] with Preferences[M]]
-  extends ((Set[M], Set[W]) => ((Set[M], Set[W]), Matching[W, M])) {
+  extends (((Set[M], Set[W])) => ((Set[M], Set[W]), Matching[W, M])) {
 
   /** Compute a weakly stable matching between two sets.
     *
-    * @param ms set of proposers to be matched.
-    * @param ws set of proposees to be matched.
+    * @param unmatched
     * @return
     * @note A matching will be called "weakly stable" unless there is a pair each of which strictly prefers the other
     *       to its partner in the matching. This algorithm produces a weakly stable matching in `O(n^2)` time where `n`
     *       is the size of the inputs sets.
     */
-  def apply(ms: Set[M], ws: Set[W]): ((Set[M], Set[W]), Matching[W, M]) = {
+  def apply(unmatched: (Set[M], Set[W])): ((Set[M], Set[W]), Matching[W, M]) = {
 
     @annotation.tailrec
     def accumulate(unMatchedMs: Set[M], toBeMatchedMs: Set[M], matches: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
       toBeMatchedMs.headOption match {
         case Some(toBeMatchedM) =>
           val previouslyRejected = rejected.getOrElse(toBeMatchedM, Set.empty)
-          val acceptableWs = ws.diff(previouslyRejected)
+          val acceptableWs = unmatched._2.diff(previouslyRejected)
           if (acceptableWs.isEmpty) {
             accumulate(unMatchedMs + toBeMatchedM, toBeMatchedMs - toBeMatchedM, matches, rejected)
           } else {
@@ -63,11 +62,11 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
             }
           }
         case None =>
-          (unMatchedMs, matches.keySet.diff(ws), matches)
+          (unMatchedMs, matches.keySet.diff(unmatched._2), matches)
       }
     }
-    val unacceptableWs = ms.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> ws.filter(m.isAcceptable)))
-    val (unMatchedMs, unMatchedWs, matches) = accumulate(Set.empty, ms, Map.empty, unacceptableWs)
+    val unacceptableWs = unmatched._1.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> unmatched._2.filter(m.isAcceptable)))
+    val (unMatchedMs, unMatchedWs, matches) = accumulate(Set.empty, unmatched._1, Map.empty, unacceptableWs)
     ((unMatchedMs, unMatchedWs), Matching(matches))
   }
 

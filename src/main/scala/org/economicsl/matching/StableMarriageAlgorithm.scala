@@ -36,23 +36,22 @@ import org.scalactic.TripleEquals._
   *      [[http://www.eecs.harvard.edu/cs286r/courses/fall09/papers/galeshapley.pdf ''Gale and Shapley (1962)'']].
   */
 class StableMarriageAlgorithm[M <: Proposer with Preferences[W], W <: Preferences[M]]
-  extends ((Set[M], Set[W]) => ((Set[M], Set[W]), Matching[W, M])) {
+  extends (((Set[M], Set[W])) => ((Set[M], Set[W]), Matching[W, M])) {
 
   /** Compute a stable matching between two sets of equal size.
     *
-    * @param ms set of proposers to be matched.
-    * @param ws set of proposees to be matched.
+    * @param unmatched
     * @return a stable matching between proposees (`ws`) and proposers (`ms`).
     */
-  def apply(ms: Set[M], ws: Set[W]): ((Set[M], Set[W]), Matching[W, M]) = {
-    require(ms.size === ws.size)
+  def apply(unmatched: (Set[M], Set[W])): ((Set[M], Set[W]), Matching[W, M]) = {
+    require(unmatched._1.size === unmatched._2.size)
 
     @annotation.tailrec
     def accumulate(unMatchedMs: Set[M], matches: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
       unMatchedMs.headOption match {
         case Some(unMatchedM) =>
           val previouslyRejected = rejected.getOrElse(unMatchedM, Set.empty)
-          val mostPreferredW = ws.diff(previouslyRejected).max(unMatchedM.ordering)
+          val mostPreferredW = unmatched._2.diff(previouslyRejected).max(unMatchedM.ordering)
           matches.get(mostPreferredW) match {
             case Some(m) if mostPreferredW.ordering.lt(m, unMatchedM) => // mostPreferredW has received strictly better offer!
               val updatedUnMatchedMs = unMatchedMs - unMatchedM + m
@@ -67,10 +66,10 @@ class StableMarriageAlgorithm[M <: Proposer with Preferences[W], W <: Preference
           }
         case None =>
           assert(unMatchedMs.isEmpty)
-          (unMatchedMs, ws.diff(matches.keySet), matches)
+          (unMatchedMs, unmatched._2.diff(matches.keySet), matches)
       }
     }
-    val (unMatchedMs, unMatchedWs, matches) = accumulate(ms, Map.empty, Map.empty)
+    val (unMatchedMs, unMatchedWs, matches) = accumulate(unmatched._1, Map.empty, Map.empty)
     ((unMatchedMs, unMatchedWs), Matching(matches))
 
   }
