@@ -24,14 +24,14 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
 
   val man: Gen[Man] = {
     for {
-      id <- Gen.posNum[Long]
+      id <- Gen.uuid
       quality <- Gen.posNum[Long]
     } yield Man(id, quality, Man.womanByQuality)
   }
 
   val woman: Gen[Woman] = {
     for {
-      id <- Gen.posNum[Long]
+      id <- Gen.uuid
       quality <- Gen.posNum[Long]
     } yield Woman(id, quality, Woman.manByQuality)
   }
@@ -40,10 +40,10 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
     Gen.containerOfN[Set, T](n, g)
   }
 
-  val unMatched: Gen[(List[Man], List[Woman])] = Gen.sized {
+  val unMatched: Gen[(Set[Man], Set[Woman])] = Gen.sized {
     size => for {
-      ms <- Gen.containerOfN[List, Man](size, man)
-      ws <- Gen.containerOfN[List, Woman](size, woman)
+      ms <- Gen.containerOfN[Set, Man](size, man)
+      ws <- Gen.containerOfN[Set, Woman](size, woman)
     } yield (ms, ws)
   }
 
@@ -51,26 +51,31 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
     matching.get(pair._2).exists(pair._2.ordering.gt(pair._1, _)) && matching.map(_.swap).get(pair._1).exists(pair._1.ordering.gt(pair._2, _))
   }
 
-  val pairOfSetGen = Gen.sized {
+  val pairOfListGen2 = Gen.sized {
     size => for {
-      x <- Gen.containerOfN[Set, Man](size, man)
-      y <- Gen.containerOfN[Set, Woman](size, woman)
+      x <- Gen.containerOfN[List, Man](size, man)
+      y <- Gen.containerOfN[List, Woman](size, woman)
     } yield (x,y)
   }
 
-  property("test") = forAll(pairOfSetGen) { case (x,y) => println(x.size, y.size); true}
+  val pairOfListGen = Gen.sized { size => for {
+    x <- Gen.containerOfN[List, Int](size, Gen.choose(0,50000))
+    y <- Gen.containerOfN[List, Int](size, Gen.choose(0,50000))
+  } yield (x,y)
+  }
 
-  /*property("all men and women are matched") = forAll(pairOfSetGen) {
+  property("test") = forAll(pairOfListGen2) { case (x,y) => println(x.size, y.size); println(x.toSet.size, y.toSet.size);true}
+
+  property("all men and women are matched") = forAll(unMatched) {
     case (ms, ws) =>
-      println((ms.size, ws.size))
       val (unMatchedMs, unMatchedWs, matches) = DeferredAcceptance.weaklyStableMatching(ms, ws)
       unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matches.size == ms.size)
   }
 
-  property("matching should be weakly stable") = forAll(pairOfSetGen) {
+  property("matching should be weakly stable") = forAll(unMatched) {
     case (ms, ws) =>
-      val (_, _, matches) = DeferredAcceptance.weaklyStableMatching(ms.toSet, ws.toSet)
+      val (_, _, matches) = DeferredAcceptance.weaklyStableMatching(ms, ws)
       ms.forall(m => ws.forall(w => !isBlockedBy(matches, (m, w))))
   }
-*/
+
 }

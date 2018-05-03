@@ -15,6 +15,8 @@ limitations under the License.
 */
 package org.economicsl.matching
 
+import java.util.UUID
+
 import org.scalatest.FlatSpec
 
 
@@ -27,11 +29,11 @@ class WeaklyStableMatchingSpec extends FlatSpec {
 
   it should "throw IllegalArgumentException when attempting to match sets of different size." in {
     assertThrows[IllegalArgumentException] {
-      DeferredAcceptance.weaklyStableMatching(Set(Man(1, 42, Man.womanByQuality)), Set.empty[Woman])
+      DeferredAcceptance.weaklyStableMatching(Set(Man(UUID.randomUUID(), 42, Man.womanByQuality)), Set.empty[Woman])
     }
 
     assertThrows[IllegalArgumentException] {
-      DeferredAcceptance.weaklyStableMatching(Set.empty[Man], Set(Woman(1, 42, Woman.manByQuality)))
+      DeferredAcceptance.weaklyStableMatching(Set.empty[Man], Set(Woman(UUID.randomUUID(), 42, Woman.manByQuality)))
     }
   }
 
