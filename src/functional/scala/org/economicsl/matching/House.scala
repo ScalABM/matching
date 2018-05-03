@@ -15,5 +15,8 @@ limitations under the License.
 */
 package org.economicsl.matching
 
-case class House(id: Long, quality: Long)
+import java.util.UUID
+
+
+case class House(uuid: UUID, quality: Long)
 

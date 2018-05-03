@@ -15,23 +15,25 @@ limitations under the License.
 */
 package org.economicsl.matching
 
+import java.util.UUID
+
 import org.scalatest.FlatSpec
 
 
 class WeaklyStableMatchingSpec extends FlatSpec {
 
   "A weakly stable matching of two empty sets" should "be an empty map" in {
-    val ((_, _), matching) = DeferredAcceptance.weaklyStableMatching[Man, Woman].run((Set.empty, Set.empty)).value
+    val ((_, _), matching) = (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set.empty[Woman])
     assert(matching.isEmpty)
   }
 
   it should "throw IllegalArgumentException when attempting to match sets of different size." in {
     assertThrows[IllegalArgumentException] {
-      DeferredAcceptance.weaklyStableMatching[Man, Woman].run((Set(Man(1, 42, Man.womanByQuality)), Set.empty[Woman])).value
+      (new StableMarriageAlgorithm[Man, Woman])(Set(Man(UUID.randomUUID(), 42, Man.womanByQuality)), Set.empty[Woman])
     }
 
     assertThrows[IllegalArgumentException] {
-      DeferredAcceptance.weaklyStableMatching[Man, Woman].run((Set.empty[Man], Set(Woman(1, 42, Woman.manByQuality)))).value
+      (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set(Woman(UUID.randomUUID(), 42, Woman.manByQuality)))
     }
   }
 

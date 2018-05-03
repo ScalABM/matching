@@ -15,8 +15,10 @@ limitations under the License.
 */
 package org.economicsl.matching
 
+import java.util.UUID
 
-case class Man(id: Long, quality: Long, ordering: Ordering[Woman]) extends Proposer with Preferences[Woman]
+
+case class Man(uuid: UUID, quality: Long, ordering: Ordering[Woman]) extends Proposer with Preferences[Woman]
 
 
 object Man {

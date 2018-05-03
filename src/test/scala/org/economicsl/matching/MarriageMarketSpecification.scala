@@ -24,31 +24,35 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
 
   val man: Gen[Man] = {
     for {
-      id <- Gen.posNum[Long]
+      id <- Gen.uuid
       quality <- Gen.posNum[Long]
     } yield Man(id, quality, Man.womanByQuality)
   }
 
   val woman: Gen[Woman] = {
     for {
-      id <- Gen.posNum[Long]
+      id <- Gen.uuid
       quality <- Gen.posNum[Long]
     } yield Woman(id, quality, Woman.manByQuality)
   }
 
-  def setOfN[T](n: Int, g: Gen[T]): Gen[Set[T]] = {
-    Gen.containerOfN[Set, T](n, g)
-  }
-
-  def unMatched: Gen[(Set[Man], Set[Woman])] = Gen.sized {
-    n => setOfN(n, man).flatMap(ms => setOfN(ms.size, woman).map(ws => (ms, ws)))
-      .suchThat { case (ms, ws) => ms.size == ws.size }
+  val unMatched: Gen[(Set[Man], Set[Woman])] = Gen.sized {
+    size => for {
+      ms <- Gen.containerOfN[Set, Man](size, man)
+      ws <- Gen.containerOfN[Set, Woman](size, woman)
+    } yield (ms, ws)
   }
 
   property("all men and women are matched") = forAll(unMatched) {
     case (ms, ws) =>
-      val ((unMatchedMs, unMatchedWs), matching) = DeferredAcceptance.weaklyStableMatching[Man, Woman].run((ms, ws)).value
+      val ((unMatchedMs, unMatchedWs), matching) = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
       unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == ms.size)
+  }
+
+  property("matching should be stable") = forAll(unMatched) {
+    case (ms, ws) =>
+      val ((_, _), matching) = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
+      ms.forall(m => ws.forall(w => !matching.isBlockedBy(w -> m)))
   }
 
 }
