@@ -26,8 +26,14 @@ import org.economicsl.matching.{Preferences, Proposer}
   */
 case class ManyToOneMatching[A <: Preferences[B] with Quota, B <: Proposer with Preferences[A]](matches: Map[A, Set[B]]) {
 
+  lazy val invertedMatches: Map[B, A] = matches.flatMap{ case (a, bs) => bs.map(b => (b, a)) }
+
   def get(a: A): Option[Set[B]] = {
     matches.get(a)
+  }
+
+  def get(b: B): Option[A] = {
+    invertedMatches.get(b)
   }
 
   def isEmpty: Boolean = {
