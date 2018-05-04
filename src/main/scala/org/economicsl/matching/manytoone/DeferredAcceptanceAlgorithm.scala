@@ -27,7 +27,7 @@ import scala.collection.immutable.TreeSet
   */
 class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferences[W],
                                   W <: Predicate[M] with Preferences[M] with Quota]
-  extends ((Set[M], Set[W]) => ((Set[M], Set[W]), ManyToOneMatching[W, Set[M]])) {
+  extends ((Set[M], Set[W]) => ((Set[M], Set[W]), ManyToOneMatching[W, M])) {
 
     /** Compute a stable matching between two sets.
       *
@@ -69,7 +69,7 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
                   val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
                   accumulate(unMatchedMs, toBeMatchedMs, matches, updatedRejected)
                 case None if mostPreferredW.isAcceptable(toBeMatchedM) => // mostPreferredW has yet to receive an acceptable offer!
-                  val updatedMatches = matches + (mostPreferredW -> TreeSet(toBeMatchedM))
+                  val updatedMatches = matches + (mostPreferredW -> TreeSet(toBeMatchedM)(mostPreferredW.ordering))
                   accumulate(unMatchedMs, toBeMatchedMs - toBeMatchedM, updatedMatches, rejected)
                 case None =>  // toBeMatchedM proposal is not acceptable to mostPreferredW!
                   val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
