@@ -37,5 +37,11 @@ object SchoolChoiceSpecification extends Properties("school-choice") {
       matching.matches.forall{ case (school, matchedStudents) => matchedStudents.size <= school.quota }
   }
 
+  property("matching should be stable") = forAll(unMatched) {
+    case (students, schools) =>
+      val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[Student, School])(students, schools)
+      students.forall(student => schools.forall(school => !matching.isBlockedBy(school -> student)))
+  }
+
 }
 

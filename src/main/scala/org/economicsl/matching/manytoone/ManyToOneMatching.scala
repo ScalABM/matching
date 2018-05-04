@@ -36,6 +36,17 @@ case class ManyToOneMatching[A <: Preferences[B] with Quota, B <: Proposer with 
     invertedMatches.get(b)
   }
 
+  /** Test whether the matching can be blocked by a given pair.
+    *
+    * @param kv a pair representing a potential matched between and `A` and a `B`.
+    * @return `true` if the matching is blocked by the given pair; `false` otherwise.
+    * @note A `Matching` is blocked by a pair `(A, B)` if they each prefer one another to the partner that they
+    *       have been matched with.
+    */
+  def isBlockedBy(kv: (A, B)): Boolean = {
+    get(kv._2).exists(kv._2.ordering.gt(kv._1, _)) && get(kv._1).exists(bs => kv._1.ordering.gt(kv._2, bs.head))
+  }
+
   def isEmpty: Boolean = {
     matches.isEmpty
   }
