@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching.one2one
+package org.economicsl.matching.onetoone
 
 import org.economicsl.matching.{Preferences, Proposer}
 
@@ -23,7 +23,7 @@ import org.economicsl.matching.{Preferences, Proposer}
   * @tparam A
   * @tparam B
   */
-case class Matching[A <: Preferences[B], B <: Proposer with Preferences[A]](matches: Map[A, B]) {
+case class OneToOneMatching[A <: Preferences[B], B <: Proposer with Preferences[A]](matches: Map[A, B]) {
 
   lazy val invertedMatches: Map[B, A] = matches.map(_.swap)
 

@@ -15,6 +15,7 @@ limitations under the License.
 */
 package org.economicsl.matching
 
+import org.economicsl.matching.onetoone.StableMarriageAlgorithm
 import org.scalacheck.{Gen, Properties}
 
 

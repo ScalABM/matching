@@ -16,6 +16,7 @@ limitations under the License.
 package org.economicsl.matching
 
 import org.economicsl.core.Price
+import org.economicsl.matching.onetoone.DeferredAcceptanceAlgorithm
 import org.scalacheck.{Gen, Properties}
 
 import scala.collection.immutable.HashSet

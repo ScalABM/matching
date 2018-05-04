@@ -13,20 +13,33 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching
+package org.economicsl.matching.manytoone
+
+import org.economicsl.matching.{Preferences, Proposer}
 
 
-/** A mixin trait that uses a boolean function to express preferences over a particular `T`. */
-trait Predicate[-T] {
+/** Class used to represent a many-to-one matching.
+  *
+  * @param matches
+  * @tparam A
+  * @tparam B
+  */
+case class ManyToOneMatching[A <: Preferences[B] with Quota, B <: Proposer with Preferences[A]](matches: Map[A, Set[B]]) {
 
-  /** Boolean function used to determine whether some `T` is acceptable.
-    *
-    * @return a boolean function that returns `true` if the `T` is acceptable and `false` otherwise.
-    */
-  def isAcceptable: T => Boolean
+  def get(a: A): Option[Set[B]] = {
+    matches.get(a)
+  }
 
-  def isNotAcceptable: T => Boolean = {
-    t => !isAcceptable(t)
+  def isEmpty: Boolean = {
+    matches.isEmpty
+  }
+
+  def nonEmpty: Boolean = {
+    matches.nonEmpty
+  }
+
+  def size: Int = {
+    matches.size
   }
 
 }

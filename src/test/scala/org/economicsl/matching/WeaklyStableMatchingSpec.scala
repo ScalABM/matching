@@ -17,6 +17,7 @@ package org.economicsl.matching
 
 import java.util.UUID
 
+import org.economicsl.matching.onetoone.StableMarriageAlgorithm
 import org.scalatest.FlatSpec
 
 
