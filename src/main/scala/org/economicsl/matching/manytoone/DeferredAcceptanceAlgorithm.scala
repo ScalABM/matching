@@ -41,7 +41,7 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
     def apply(ms: Set[M], ws: Set[W]): ((Set[M], Set[W]), ManyToOneMatching[W, M]) = {
 
       @annotation.tailrec
-      def accumulate(unMatchedMs: Set[M], toBeMatchedMs: Set[M], matches: Map[W, TreeSet[M]], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, Set[M]]) = {
+      def accumulate(unMatchedMs: Set[M], toBeMatchedMs: Set[M], matches: Map[W, TreeSet[M]], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, TreeSet[M]]) = {
         toBeMatchedMs.headOption match {
           case Some(toBeMatchedM) =>
             val previouslyRejected = rejected.getOrElse(toBeMatchedM, Set.empty)

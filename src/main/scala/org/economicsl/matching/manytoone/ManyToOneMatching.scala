@@ -17,6 +17,8 @@ package org.economicsl.matching.manytoone
 
 import org.economicsl.matching.{Preferences, Proposer}
 
+import scala.collection.immutable.TreeSet
+
 
 /** Class used to represent a many-to-one matching.
   *
@@ -24,7 +26,7 @@ import org.economicsl.matching.{Preferences, Proposer}
   * @tparam A
   * @tparam B
   */
-case class ManyToOneMatching[A <: Preferences[B] with Quota, B <: Proposer with Preferences[A]](matches: Map[A, Set[B]]) {
+case class ManyToOneMatching[A <: Preferences[B] with Quota, B <: Proposer with Preferences[A]](matches: Map[A, TreeSet[B]]) {
 
   lazy val invertedMatches: Map[B, A] = matches.flatMap{ case (a, bs) => bs.map(b => (b, a)) }
 
