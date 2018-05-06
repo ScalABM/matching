@@ -70,7 +70,8 @@ object HouseMarketSpecification extends Properties("housing-market") {
 
   property("matching should be stable") =  Prop.forAll(unMatched) { unmatched =>
     val result = State(new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing]).run(unmatched)
-    val ((offers, listings), matching) = result.value
+    val ((_, _), matching) = result.value
+    val (offers, listings) = unmatched
     offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
   }
 

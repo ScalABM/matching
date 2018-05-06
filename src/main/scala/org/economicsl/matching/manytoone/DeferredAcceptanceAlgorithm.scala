@@ -27,18 +27,18 @@ import scala.collection.immutable.TreeSet
   */
 class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferences[W],
                                   W <: Predicate[M] with Preferences[M] with Quota]
-  extends ((Set[M], Set[W]) => ((Set[M], Set[W]), ManyToOneMatching[W, M])) {
+  extends (((Set[M], Set[W])) => ((Set[M], Set[W]), ManyToOneMatching[W, M])) {
 
     /** Compute a stable matching between two sets.
       *
-      * @param ms set of proposers to be matched.
-      * @param ws set of proposees to be matched.
+      * @param unmatched
       * @return
       * @note A matching will be called "stable" unless there is a pair each of which strictly prefers the other
       *       to its partner in the matching. This algorithm produces a weakly stable matching in `O(n^2)` time where `n`
       *       is the size of the inputs sets.
       */
-    def apply(ms: Set[M], ws: Set[W]): ((Set[M], Set[W]), ManyToOneMatching[W, M]) = {
+    def apply(unmatched: (Set[M], Set[W])): ((Set[M], Set[W]), ManyToOneMatching[W, M]) = {
+      val (ms, ws) = unmatched
 
       @annotation.tailrec
       def accumulate(unMatched: Set[M], toBeMatched: Set[M], matches: Map[W, TreeSet[M]], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, TreeSet[M]]) = {
@@ -85,6 +85,7 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
             (unMatched, matches.keySet.diff(ws), matches)
         }
       }
+
       val unacceptableWs = ms.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> ws.filter(m.isAcceptable)))
       val (unMatchedMs, unMatchedWs, matches) = accumulate(Set.empty, ms, Map.empty, unacceptableWs)
       ((unMatchedMs, unMatchedWs), ManyToOneMatching(matches))
