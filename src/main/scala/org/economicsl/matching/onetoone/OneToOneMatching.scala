@@ -13,8 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching
+package org.economicsl.matching.onetoone
 
+import org.economicsl.matching.{Preferences, Proposer}
 
 /** Class used to represent a matching.
   *
@@ -22,7 +23,7 @@ package org.economicsl.matching
   * @tparam A
   * @tparam B
   */
-case class Matching[A <: Preferences[B], B <: Proposer with Preferences[A]](matches: Map[A, B]) {
+case class OneToOneMatching[A <: Preferences[B], B <: Proposer with Preferences[A]](matches: Map[A, B]) {
 
   lazy val invertedMatches: Map[B, A] = matches.map(_.swap)
 
@@ -42,7 +43,8 @@ case class Matching[A <: Preferences[B], B <: Proposer with Preferences[A]](matc
     *       have been matched with.
     */
   def isBlockedBy(kv: (A, B)): Boolean = {
-    get(kv._2).exists(kv._2.ordering.gt(kv._1, _)) && get(kv._1).exists(kv._1.ordering.gt(kv._2, _))
+    val (a, b) = kv
+    get(b).exists(b.ordering.gt(a, _)) && get(a).exists(a.ordering.gt(b, _))
   }
 
   def isEmpty: Boolean = {

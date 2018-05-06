@@ -13,8 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching
+package org.economicsl.matching.onetoone
 
+import org.economicsl.matching.{Preferences, Proposer}
 import org.scalactic.TripleEquals._
 
 
@@ -36,14 +37,14 @@ import org.scalactic.TripleEquals._
   *      [[http://www.eecs.harvard.edu/cs286r/courses/fall09/papers/galeshapley.pdf ''Gale and Shapley (1962)'']].
   */
 class StableMarriageAlgorithm[M <: Proposer with Preferences[W], W <: Preferences[M]]
-  extends (((Set[M], Set[W])) => ((Set[M], Set[W]), Matching[W, M])) {
+  extends (((Set[M], Set[W])) => ((Set[M], Set[W]), OneToOneMatching[W, M])) {
 
   /** Compute a stable matching between two sets of equal size.
     *
     * @param unmatched
     * @return a stable matching between proposees (`ws`) and proposers (`ms`).
     */
-  def apply(unmatched: (Set[M], Set[W])): ((Set[M], Set[W]), Matching[W, M]) = {
+  def apply(unmatched: (Set[M], Set[W])): ((Set[M], Set[W]), OneToOneMatching[W, M]) = {
     require(unmatched._1.size === unmatched._2.size)
 
     @annotation.tailrec
@@ -69,8 +70,9 @@ class StableMarriageAlgorithm[M <: Proposer with Preferences[W], W <: Preference
           (unMatchedMs, unmatched._2.diff(matches.keySet), matches)
       }
     }
+
     val (unMatchedMs, unMatchedWs, matches) = accumulate(unmatched._1, Map.empty, Map.empty)
-    ((unMatchedMs, unMatchedWs), Matching(matches))
+    ((unMatchedMs, unMatchedWs), OneToOneMatching(matches))
 
   }
 

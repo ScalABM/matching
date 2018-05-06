@@ -17,12 +17,11 @@ package org.economicsl.matching
 
 import cats.data.State
 import org.economicsl.core.Price
-import org.scalacheck.{Gen, Properties}
+import org.economicsl.matching.onetoone.DeferredAcceptanceAlgorithm
+import org.scalacheck.{Gen, Prop, Properties}
 
 
 object HouseMarketSpecification extends Properties("housing-market") {
-
-  import org.scalacheck.Prop._
 
   // this generator should exist in esl-core!
   def price: Gen[Price] = {
@@ -63,6 +62,7 @@ object HouseMarketSpecification extends Properties("housing-market") {
 
   }
 
+<<<<<<< HEAD
   property("matching should be incentive-compatible") = forAll(unMatched) { unmatched =>
         val result = State(new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing]).run(unmatched)
         val ((_, _), matching) = result.value
@@ -73,6 +73,18 @@ object HouseMarketSpecification extends Properties("housing-market") {
     val result = State(new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing]).run(unmatched)
     val ((offers, listings), matching) = result.value
     offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
+=======
+  property("matching should be incentive-compatible") = Prop.forAll(housePurchaseOffers, houseListings) {
+    case (offers, listings) =>
+      val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
+      matching.matches.forall{ case (offer, listing) => offer.price >= listing.price }
+  }
+
+  property("matching should be stable") =  Prop.forAll(housePurchaseOffers, houseListings) {
+    case (offers, listings) =>
+      val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
+      offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
+>>>>>>> master
   }
 
 }

@@ -13,15 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching
+package org.economicsl.matching.onetoone
+
 
 import cats.data.State
-import org.scalacheck.{Gen, Properties}
+import org.scalacheck.{Gen, Prop, Properties}
 
 
 object MarriageMarketSpecification extends Properties("marriage-market") {
-
-  import org.scalacheck.Prop._
 
   val man: Gen[Man] = {
     for {
@@ -44,13 +43,13 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
     } yield (ms, ws)
   }
 
-  property("all men and women are matched") = forAll(unMatched) { unmatched =>
+  property("all men and women are matched") = Prop.forAll(unMatched) { unmatched =>
       val result = State(new StableMarriageAlgorithm[Man, Woman]).run(unmatched)
       val ((unMatchedMs, unMatchedWs), matching) = result.value
       unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == unmatched._1.size)
   }
 
-  property("matching should be stable") = forAll(unMatched) {unmatched =>
+  property("matching should be stable") = Prop.forAll(unMatched) {unmatched =>
     val result = State(new StableMarriageAlgorithm[Man, Woman]).run(unmatched)
     val ((_, _), matching) = result.value
     unmatched._1.forall(m => unmatched._2.forall(w => !matching.isBlockedBy(w -> m)))

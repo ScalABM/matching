@@ -15,14 +15,5 @@ limitations under the License.
 */
 package org.economicsl.matching
 
-import java.util.UUID
 
-
-case class Woman(uuid: UUID, quality: Long, ordering: Ordering[Man]) extends Preferences[Man]
-
-
-object Woman {
-
-  val manByQuality: Ordering[Man] = Ordering.by(m => m.quality)
-
-}
+package object manytoone

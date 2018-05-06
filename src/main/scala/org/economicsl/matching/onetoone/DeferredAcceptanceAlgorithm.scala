@@ -13,7 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching
+package org.economicsl.matching.onetoone
+
+import org.economicsl.matching.{Predicate, Preferences, Proposer}
 
 
 /** Class implementing the deferred acceptance algorithm.
@@ -22,7 +24,7 @@ package org.economicsl.matching
   * @tparam W the type of proposee.
   */
 class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferences[W], W <: Predicate[M] with Preferences[M]]
-  extends (((Set[M], Set[W])) => ((Set[M], Set[W]), Matching[W, M])) {
+  extends (((Set[M], Set[W])) => ((Set[M], Set[W]), OneToOneMatching[W, M])) {
 
   /** Compute a weakly stable matching between two sets.
     *
@@ -32,7 +34,7 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
     *       to its partner in the matching. This algorithm produces a weakly stable matching in `O(n^2)` time where `n`
     *       is the size of the inputs sets.
     */
-  def apply(unmatched: (Set[M], Set[W])): ((Set[M], Set[W]), Matching[W, M]) = {
+  def apply(unmatched: (Set[M], Set[W])): ((Set[M], Set[W]), OneToOneMatching[W, M]) = {
 
     @annotation.tailrec
     def accumulate(unMatchedMs: Set[M], toBeMatchedMs: Set[M], matches: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
@@ -67,7 +69,7 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
     }
     val unacceptableWs = unmatched._1.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> unmatched._2.filter(m.isAcceptable)))
     val (unMatchedMs, unMatchedWs, matches) = accumulate(Set.empty, unmatched._1, Map.empty, unacceptableWs)
-    ((unMatchedMs, unMatchedWs), Matching(matches))
+    ((unMatchedMs, unMatchedWs), OneToOneMatching(matches))
   }
 
 }
