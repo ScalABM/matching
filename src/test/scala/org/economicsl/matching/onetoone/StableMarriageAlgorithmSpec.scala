@@ -24,24 +24,22 @@ import scala.util.{Failure, Success}
 
 class StableMarriageAlgorithmSpec extends FlatSpec {
 
-  "A weakly stable matching of two empty sets" should "be an empty map" in {
-
+  "The stable marriage algorithm applied to two empty sets" should "successfully return an empty matching." in {
     val result = (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set.empty[Woman])
     result match {
       case Success(((_, _), matching)) =>
         assert(matching.isEmpty)
-      case Failure(_) => ???
+      case Failure(_) =>
+        false
     }
   }
 
-  it should "throw IllegalArgumentException when attempting to match sets of different size." in {
-    assertThrows[IllegalArgumentException] {
-      (new StableMarriageAlgorithm[Man, Woman])(Set(Man(UUID.randomUUID(), 42, Man.womanByQuality)), Set.empty[Woman])
-    }
+  "The stable matching algorithm applied to sets of different sizes" should "return a failure." in {
+    val result1 = (new StableMarriageAlgorithm[Man, Woman])(Set(Man(UUID.randomUUID(), 42, Man.womanByQuality)), Set.empty[Woman])
+    assert(result1.isFailure)
 
-    assertThrows[IllegalArgumentException] {
-      (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set(Woman(UUID.randomUUID(), 42, Woman.manByQuality)))
-    }
+    val result2 = (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set(Woman(UUID.randomUUID(), 42, Woman.manByQuality)))
+    assert(result2.isFailure)
   }
 
 }
