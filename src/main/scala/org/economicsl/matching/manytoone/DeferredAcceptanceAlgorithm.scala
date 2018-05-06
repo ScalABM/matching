@@ -41,44 +41,48 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
     def apply(ms: Set[M], ws: Set[W]): ((Set[M], Set[W]), ManyToOneMatching[W, M]) = {
 
       @annotation.tailrec
-      def accumulate(unMatchedMs: Set[M], toBeMatchedMs: Set[M], matches: Map[W, TreeSet[M]], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, TreeSet[M]]) = {
-        toBeMatchedMs.headOption match {
+      def accumulate(unMatched: Set[M], toBeMatched: Set[M], matches: Map[W, TreeSet[M]], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, TreeSet[M]]) = {
+        toBeMatched.headOption match {
           case Some(toBeMatchedM) =>
             val previouslyRejected = rejected.getOrElse(toBeMatchedM, Set.empty)
             val acceptableWs = ws.diff(previouslyRejected)
             if (acceptableWs.isEmpty) {
-              accumulate(unMatchedMs + toBeMatchedM, toBeMatchedMs - toBeMatchedM, matches, rejected)
+              accumulate(unMatched + toBeMatchedM, toBeMatched - toBeMatchedM, matches, rejected)
             } else {
               val mostPreferredW = acceptableWs.max(toBeMatchedM.ordering)
               matches.get(mostPreferredW) match {
                 case Some(matchedMs) if mostPreferredW.isAcceptable(toBeMatchedM) =>
-                  if (matchedMs.size < mostPreferredW.quota) { // mostPreferredW has spots to fill!
-                    val updatedToBeMatchedMs = toBeMatchedMs - toBeMatchedM
-                    val updatedMatches = matches.updated(mostPreferredW, matchedMs + toBeMatchedM)
-                    accumulate(unMatchedMs, updatedToBeMatchedMs, updatedMatches, rejected)
-                  } else if (mostPreferredW.ordering.lt(matchedMs.head, toBeMatchedM)) {  // mostPreferredW has reached its quota!
-                    val leastPreferredMatchedM = matchedMs.head
-                    val updatedToBeMatchedMs = toBeMatchedMs - toBeMatchedM + leastPreferredMatchedM
-                    val updatedMatches = matches.updated(mostPreferredW, matchedMs - leastPreferredMatchedM + toBeMatchedM)
-                    val updatedRejected = rejected.updated(leastPreferredMatchedM, rejected.getOrElse(leastPreferredMatchedM, Set.empty) + mostPreferredW)
-                    accumulate(unMatchedMs, updatedToBeMatchedMs, updatedMatches, updatedRejected)
-                  } else {
-                    val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
-                    accumulate(unMatchedMs, toBeMatchedMs, matches, updatedRejected)
+                  matchedMs.headOption match {
+                    case Some(_) if matchedMs.size < mostPreferredW.quota =>
+                      val updatedToBeMatchedMs = toBeMatched - toBeMatchedM
+                      val updatedMatches = matches.updated(mostPreferredW, matchedMs + toBeMatchedM)
+                      accumulate(unMatched, updatedToBeMatchedMs, updatedMatches, rejected)
+                    case Some(leastPreferredMatchedM) if mostPreferredW.ordering.lt(leastPreferredMatchedM, toBeMatchedM) =>
+                      val updatedToBeMatchedMs = toBeMatched - toBeMatchedM + leastPreferredMatchedM
+                      val updatedMatches = matches.updated(mostPreferredW, matchedMs - leastPreferredMatchedM + toBeMatchedM)
+                      val updatedRejected = rejected.updated(leastPreferredMatchedM, rejected.getOrElse(leastPreferredMatchedM, Set.empty) + mostPreferredW)
+                      accumulate(unMatched, updatedToBeMatchedMs, updatedMatches, updatedRejected)
+                    case Some(leastPreferredMatchedM) if mostPreferredW.ordering.gteq(leastPreferredMatchedM, toBeMatchedM) =>
+                      val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
+                      accumulate(unMatched, toBeMatched, matches, updatedRejected)
+                    case None =>
+                      val updatedToBeMatchedMs = toBeMatched - toBeMatchedM
+                      val updatedMatches = matches.updated(mostPreferredW, matchedMs + toBeMatchedM)
+                      accumulate(unMatched, updatedToBeMatchedMs, updatedMatches, rejected)
                   }
-                case Some(_) => // toBeMatchedM proposal is not acceptable to mostPreferredW
+                case Some(_) if mostPreferredW.isNotAcceptable(toBeMatchedM) =>
                   val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
-                  accumulate(unMatchedMs, toBeMatchedMs, matches, updatedRejected)
-                case None if mostPreferredW.isAcceptable(toBeMatchedM) => // mostPreferredW has yet to receive an acceptable offer!
+                  accumulate(unMatched, toBeMatched, matches, updatedRejected)
+                case None if mostPreferredW.isAcceptable(toBeMatchedM) =>
                   val updatedMatches = matches + (mostPreferredW -> TreeSet(toBeMatchedM)(mostPreferredW.ordering))
-                  accumulate(unMatchedMs, toBeMatchedMs - toBeMatchedM, updatedMatches, rejected)
-                case None =>  // toBeMatchedM proposal is not acceptable to mostPreferredW!
+                  accumulate(unMatched, toBeMatched - toBeMatchedM, updatedMatches, rejected)
+                case None if mostPreferredW.isNotAcceptable(toBeMatchedM) =>
                   val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
-                  accumulate(unMatchedMs, toBeMatchedMs, matches, updatedRejected)
+                  accumulate(unMatched, toBeMatched, matches, updatedRejected)
               }
             }
           case None =>
-            (unMatchedMs, matches.keySet.diff(ws), matches)
+            (unMatched, matches.keySet.diff(ws), matches)
         }
       }
       val unacceptableWs = ms.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> ws.filter(m.isAcceptable)))
