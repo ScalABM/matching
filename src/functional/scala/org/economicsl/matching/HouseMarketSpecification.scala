@@ -62,29 +62,16 @@ object HouseMarketSpecification extends Properties("housing-market") {
 
   }
 
-<<<<<<< HEAD
-  property("matching should be incentive-compatible") = forAll(unMatched) { unmatched =>
+  property("matching should be incentive-compatible") = Prop.forAll(unMatched) { unmatched =>
         val result = State(new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing]).run(unmatched)
         val ((_, _), matching) = result.value
         matching.matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
-  property("matching should be stable") =  forAll(unMatched) { unmatched =>
+  property("matching should be stable") =  Prop.forAll(unMatched) { unmatched =>
     val result = State(new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing]).run(unmatched)
     val ((offers, listings), matching) = result.value
     offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
-=======
-  property("matching should be incentive-compatible") = Prop.forAll(housePurchaseOffers, houseListings) {
-    case (offers, listings) =>
-      val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
-      matching.matches.forall{ case (offer, listing) => offer.price >= listing.price }
-  }
-
-  property("matching should be stable") =  Prop.forAll(housePurchaseOffers, houseListings) {
-    case (offers, listings) =>
-      val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
-      offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
->>>>>>> master
   }
 
 }
