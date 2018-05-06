@@ -46,7 +46,8 @@ case class ManyToOneMatching[A <: Preferences[B] with Quota, B <: Proposer with 
     *       have been matched with.
     */
   def isBlockedBy(kv: (A, B)): Boolean = {
-    get(kv._2).exists(kv._2.ordering.gt(kv._1, _)) && get(kv._1).exists(bs => kv._1.ordering.gt(kv._2, bs.head))
+    val (a, b) = kv
+    get(b).exists(b.ordering.gt(a, _)) && get(a).exists(bs => a.ordering.gt(b, bs.head))
   }
 
   def isEmpty: Boolean = {

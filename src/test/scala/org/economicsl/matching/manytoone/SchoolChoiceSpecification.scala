@@ -15,12 +15,10 @@ limitations under the License.
 */
 package org.economicsl.matching.manytoone
 
-import org.scalacheck.{Gen, Properties}
+import org.scalacheck.{Gen, Prop, Properties}
 
 
 object SchoolChoiceSpecification extends Properties("school-choice") {
-
-  import org.scalacheck.Prop._
 
   val randomStudent: Gen[Student] = {
     for {
@@ -46,13 +44,13 @@ object SchoolChoiceSpecification extends Properties("school-choice") {
     } yield (students, schools)
   }
 
-  property("no school accepts more students than its quota allows") = forAll(unMatched) {
+  property("no school accepts more students than its quota allows") = Prop.forAll(unMatched) {
     case (students, schools) =>
       val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[Student, School])(students, schools)
       matching.matches.forall{ case (school, matchedStudents) => matchedStudents.size <= school.quota }
   }
 
-  property("matching should be stable") = forAll(unMatched) {
+  property("matching should be stable") = Prop.forAll(unMatched) {
     case (students, schools) =>
       val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[Student, School])(students, schools)
       students.forall(student => schools.forall(school => !matching.isBlockedBy(school -> student)))
