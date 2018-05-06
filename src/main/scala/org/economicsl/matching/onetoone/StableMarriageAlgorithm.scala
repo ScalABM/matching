@@ -77,7 +77,7 @@ class StableMarriageAlgorithm[M <: Proposer with Preferences[W], W <: Preference
       Success(((unMatchedMs, unMatchedWs), OneToOneMatching(matches)))
     }
     else {
-      Failure(new IllegalArgumentException("Algorithm requires the size of input sets to be the same!"))
+      Failure(new IllegalArgumentException(s"The size of ms is ${ms.size} which does not equal the size of ws which is ${ws.size}!"))
     }
 
   }
