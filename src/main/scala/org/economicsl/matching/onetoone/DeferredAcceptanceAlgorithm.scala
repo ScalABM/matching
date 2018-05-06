@@ -35,13 +35,14 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
     *       is the size of the inputs sets.
     */
   def apply(unmatched: (Set[M], Set[W])): ((Set[M], Set[W]), OneToOneMatching[W, M]) = {
+    val (ms, ws) = unmatched
 
     @annotation.tailrec
     def accumulate(unMatchedMs: Set[M], toBeMatchedMs: Set[M], matches: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
       toBeMatchedMs.headOption match {
         case Some(toBeMatchedM) =>
           val previouslyRejected = rejected.getOrElse(toBeMatchedM, Set.empty)
-          val acceptableWs = unmatched._2.diff(previouslyRejected)
+          val acceptableWs = ws.diff(previouslyRejected)
           if (acceptableWs.isEmpty) {
             accumulate(unMatchedMs + toBeMatchedM, toBeMatchedMs - toBeMatchedM, matches, rejected)
           } else {
@@ -64,11 +65,11 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
             }
           }
         case None =>
-          (unMatchedMs, matches.keySet.diff(unmatched._2), matches)
+          (unMatchedMs, matches.keySet.diff(ws), matches)
       }
     }
-    val unacceptableWs = unmatched._1.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> unmatched._2.filter(m.isAcceptable)))
-    val (unMatchedMs, unMatchedWs, matches) = accumulate(Set.empty, unmatched._1, Map.empty, unacceptableWs)
+    val unacceptableWs = ms.foldLeft(Map.empty[M, Set[W]])((z, m) => z + (m -> ws.filter(m.isAcceptable)))
+    val (unMatchedMs, unMatchedWs, matches) = accumulate(Set.empty, ms, Map.empty, unacceptableWs)
     ((unMatchedMs, unMatchedWs), OneToOneMatching(matches))
   }
 
