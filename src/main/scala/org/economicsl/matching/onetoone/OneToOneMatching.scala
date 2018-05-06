@@ -43,7 +43,8 @@ case class OneToOneMatching[A <: Preferences[B], B <: Proposer with Preferences[
     *       have been matched with.
     */
   def isBlockedBy(kv: (A, B)): Boolean = {
-    get(kv._2).exists(kv._2.ordering.gt(kv._1, _)) && get(kv._1).exists(kv._1.ordering.gt(kv._2, _))
+    val (a, b) = kv
+    get(b).exists(b.ordering.gt(a, _)) && get(a).exists(a.ordering.gt(b, _))
   }
 
   def isEmpty: Boolean = {
