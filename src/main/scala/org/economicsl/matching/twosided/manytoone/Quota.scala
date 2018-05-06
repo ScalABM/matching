@@ -13,18 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching.onetoone
-
-import java.util.UUID
-
-import org.economicsl.matching.Preferences
+package org.economicsl.matching.twosided.manytoone
 
 
-case class Woman(uuid: UUID, quality: Long, ordering: Ordering[Man]) extends Preferences[Man]
+trait Quota {
 
-
-object Woman {
-
-  val manByQuality: Ordering[Man] = Ordering.by(m => m.quality)
+  def quota: Int
 
 }

@@ -3,7 +3,7 @@ package org.economicsl.matching
 import java.util.UUID
 
 import org.economicsl.core.Price
-import org.economicsl.matching.onetoone.StableMarriageAlgorithm
+import org.economicsl.matching.twosided.onetoone.StableMarriageAlgorithm
 import org.scalameter.{Bench, Gen}
 
 import scala.collection.immutable.HashSet
