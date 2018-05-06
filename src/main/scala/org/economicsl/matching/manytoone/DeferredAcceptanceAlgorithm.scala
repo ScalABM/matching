@@ -57,9 +57,10 @@ class DeferredAcceptanceAlgorithm[M <: Proposer with Predicate[W] with Preferenc
                     val updatedMatches = matches.updated(mostPreferredW, matchedMs + toBeMatchedM)
                     accumulate(unMatchedMs, updatedToBeMatchedMs, updatedMatches, rejected)
                   } else if (mostPreferredW.ordering.lt(matchedMs.head, toBeMatchedM)) {  // mostPreferredW has reached its quota!
-                    val updatedToBeMatchedMs = toBeMatchedMs - toBeMatchedM + matchedMs.head
-                    val updatedMatches = matches.updated(mostPreferredW, matchedMs - matchedMs.head + toBeMatchedM)
-                    val updatedRejected = rejected.updated(matchedMs.head, rejected.getOrElse(matchedMs.head, Set.empty) + mostPreferredW)
+                    val leastPreferredMatchedM = matchedMs.head
+                    val updatedToBeMatchedMs = toBeMatchedMs - toBeMatchedM + leastPreferredMatchedM
+                    val updatedMatches = matches.updated(mostPreferredW, matchedMs - leastPreferredMatchedM + toBeMatchedM)
+                    val updatedRejected = rejected.updated(leastPreferredMatchedM, rejected.getOrElse(leastPreferredMatchedM, Set.empty) + mostPreferredW)
                     accumulate(unMatchedMs, updatedToBeMatchedMs, updatedMatches, updatedRejected)
                   } else {
                     val updatedRejected = rejected.updated(toBeMatchedM, previouslyRejected + mostPreferredW)
