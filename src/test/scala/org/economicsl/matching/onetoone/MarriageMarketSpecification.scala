@@ -19,40 +19,54 @@ package org.economicsl.matching.onetoone
 import cats.data.State
 import org.scalacheck.{Gen, Prop, Properties}
 
+import scala.util.{Failure, Success}
+
 
 object MarriageMarketSpecification extends Properties("marriage-market") {
 
-  val man: Gen[Man] = {
+  val randomMan: Gen[Man] = {
     for {
       id <- Gen.uuid
       quality <- Gen.posNum[Long]
     } yield Man(id, quality, Man.womanByQuality)
   }
 
-  val woman: Gen[Woman] = {
+  val randomWoman: Gen[Woman] = {
     for {
       id <- Gen.uuid
       quality <- Gen.posNum[Long]
     } yield Woman(id, quality, Woman.manByQuality)
   }
 
-  val unMatched: Gen[(Set[Man], Set[Woman])] = Gen.sized {
+  val randomUnmatchedSets: Gen[(Set[Man], Set[Woman])] = Gen.sized {
     size => for {
-      ms <- Gen.containerOfN[Set, Man](size, man)
-      ws <- Gen.containerOfN[Set, Woman](size, woman)
+      nm <- Gen.choose(0, size)
+      ms <- Gen.containerOfN[Set, Man](nm, randomMan)
+      nw <- Gen.choose(0, size)
+      ws <- Gen.containerOfN[Set, Woman](nw, randomWoman)
     } yield (ms, ws)
   }
 
-  property("all men and women are matched") = Prop.forAll(unMatched) { unmatched =>
-      val result = State(new StableMarriageAlgorithm[Man, Woman]).run(unmatched)
-      val ((unMatchedMs, unMatchedWs), matching) = result.value
-      unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == unmatched._1.size)
+  property("all men and women are matched") = Prop.forAll(randomUnmatchedSets) {
+    case (ms, ws) =>
+      val result = State(new StableMarriageAlgorithm[Man, Woman]).run(ms, ws)
+      result match {
+        case Success(((unMatchedMs, unMatchedWs), matching)) =>
+          (ms.size == ws.size) && unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == ms.size)
+        case Failure(_) =>
+          ms.size != ws.size
+      }
   }
 
-  property("matching should be stable") = Prop.forAll(unMatched) {unmatched =>
-    val result = State(new StableMarriageAlgorithm[Man, Woman]).run(unmatched)
-    val ((_, _), matching) = result.value
-    unmatched._1.forall(m => unmatched._2.forall(w => !matching.isBlockedBy(w -> m)))
+  property("matching should be stable") = Prop.forAll(randomUnmatchedSets) {
+    case (ms, ws) =>
+      val result = State(new StableMarriageAlgorithm[Man, Woman]).run(ms, ws)
+      result match {
+        case Success(((_, _), matching)) =>
+          ms.forall(m => ws.forall(w => !matching.isBlockedBy(w -> m)))
+        case Failure(_) =>
+          ms.size != ws.size
+      }
   }
 
 }
