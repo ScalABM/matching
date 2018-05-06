@@ -19,12 +19,19 @@ import java.util.UUID
 
 import org.scalatest.FlatSpec
 
+import scala.util.{Failure, Success}
 
-class WeaklyStableMatchingSpec extends FlatSpec {
+
+class StableMarriageAlgorithmSpec extends FlatSpec {
 
   "A weakly stable matching of two empty sets" should "be an empty map" in {
-    val ((_, _), matching) = (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set.empty[Woman])
-    assert(matching.isEmpty)
+
+    val result = (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set.empty[Woman])
+    result match {
+      case Success(((_, _), matching)) =>
+        assert(matching.isEmpty)
+      case Failure(_) => ???
+    }
   }
 
   it should "throw IllegalArgumentException when attempting to match sets of different size." in {
