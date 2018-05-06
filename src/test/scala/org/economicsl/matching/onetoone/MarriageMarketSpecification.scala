@@ -15,12 +15,10 @@ limitations under the License.
 */
 package org.economicsl.matching.onetoone
 
-import org.scalacheck.{Gen, Properties}
+import org.scalacheck.{Gen, Prop, Properties}
 
 
 object MarriageMarketSpecification extends Properties("marriage-market") {
-
-  import org.scalacheck.Prop._
 
   val man: Gen[Man] = {
     for {
@@ -43,13 +41,13 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
     } yield (ms, ws)
   }
 
-  property("all men and women are matched") = forAll(unMatched) {
+  property("all men and women are matched") = Prop.forAll(unMatched) {
     case (ms, ws) =>
       val ((unMatchedMs, unMatchedWs), matching) = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
       unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == ms.size)
   }
 
-  property("matching should be stable") = forAll(unMatched) {
+  property("matching should be stable") = Prop.forAll(unMatched) {
     case (ms, ws) =>
       val ((_, _), matching) = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
       ms.forall(m => ws.forall(w => !matching.isBlockedBy(w -> m)))

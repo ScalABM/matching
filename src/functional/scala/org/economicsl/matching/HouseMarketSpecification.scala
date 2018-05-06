@@ -17,14 +17,12 @@ package org.economicsl.matching
 
 import org.economicsl.core.Price
 import org.economicsl.matching.onetoone.DeferredAcceptanceAlgorithm
-import org.scalacheck.{Gen, Properties}
+import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.collection.immutable.HashSet
 
 
 object HouseMarketSpecification extends Properties("housing-market") {
-
-  import org.scalacheck.Prop._
 
   // this generator should exist in esl-core!
   val priceGen: Gen[Price] = {
@@ -65,13 +63,13 @@ object HouseMarketSpecification extends Properties("housing-market") {
     n => Gen.containerOfN[HashSet, HouseListing](n, houseListingGen)
   }
 
-  property("matching should be incentive-compatible") = forAll(housePurchaseOffers, houseListings) {
+  property("matching should be incentive-compatible") = Prop.forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
       val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
       matching.matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
-  property("matching should be stable") =  forAll(housePurchaseOffers, houseListings) {
+  property("matching should be stable") =  Prop.forAll(housePurchaseOffers, houseListings) {
     case (offers, listings) =>
       val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
       offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
