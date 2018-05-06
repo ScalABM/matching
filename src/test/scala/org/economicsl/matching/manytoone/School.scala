@@ -13,16 +13,27 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching
+package org.economicsl.matching.manytoone
 
 import java.util.UUID
 
+import org.economicsl.matching.{Predicate, Preferences}
 
-case class Man(uuid: UUID, quality: Long, ordering: Ordering[Woman]) extends Proposer with Preferences[Woman]
+
+case class School(uuid: UUID, quality: Double, quota: Int, isAcceptable: (Student) => Boolean, ordering: Ordering[Student])
+  extends Predicate[Student] with Preferences[Student] with Quota
 
 
-object Man {
+object School {
 
-  implicit val womanByQuality: Ordering[Woman] = Ordering.by(w => w.quality)
+  implicit val studentByGPA: Ordering[Student] = Ordering.by(student => student.gpa)
+
+  val anyStudentIsAcceptable: (Student) => Boolean = {
+    _ => true
+  }
+
+  def gpaGreaterThan(threshold: Double)(student: Student): Boolean = {
+    student.gpa >= threshold
+  }
 
 }

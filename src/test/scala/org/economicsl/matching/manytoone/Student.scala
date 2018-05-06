@@ -13,20 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching
+package org.economicsl.matching.manytoone
+
+import java.util.UUID
+
+import org.economicsl.matching.{Predicate, Preferences, Proposer}
 
 
-/** A mixin trait that uses a boolean function to express preferences over a particular `T`. */
-trait Predicate[-T] {
+case class Student(uuid: UUID, gpa: Double, isAcceptable: (School) => Boolean, ordering: Ordering[School])
+  extends Proposer with Predicate[School] with Preferences[School]
 
-  /** Boolean function used to determine whether some `T` is acceptable.
-    *
-    * @return a boolean function that returns `true` if the `T` is acceptable and `false` otherwise.
-    */
-  def isAcceptable: T => Boolean
 
-  def isNotAcceptable: T => Boolean = {
-    t => !isAcceptable(t)
+object Student {
+
+  implicit val schoolByQuality: Ordering[School] = Ordering.by(school => school.quality)
+
+  val anySchoolIsAcceptable: (School) => Boolean = {
+    _ => true
   }
 
 }
