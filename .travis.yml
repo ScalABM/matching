@@ -17,4 +17,12 @@ branches:
 
 script:
   - sbt ++$TRAVIS_SCALA_VERSION clean compile
-  - sbt ++$TRAVIS_SCALA_VERSION test functional:test
+  - sbt ++$TRAVIS_SCALA_VERSION coverage test functional:test
+  
+after_success:
+  - sbt ++$TRAVIS_SCALA_VERSION coverageReport codacyCoverage  # uses decrypted CODACY_PROJECT_TOKEN
+  
+env:
+  global:
+    - secure: "HKIuYDFg9ATBF9rlb/va9ar0mpX9U9aMPXW932S3DLPy472f3eIeoPmcwezKBgbiYZbYjhgAXZSrHadU4X4/cbTUzm8s4y9cjyX12EpQgRo9gYJfrc6xNOx0svSYRP19/jXu/BlU48J90xUe3lsIYaZcCCNTQv3TF8684j+eREET9xITpkIAmZdRxz66l9filei/l7jsPniUCxqGIkB4nIeFi/QHaocMhGpC8QEIKoRvHyVWyIcifMrztOs1OYQSLWpFeII5tCpBt5XINulxtdR8GggehsvzBFO7ItPLi4225xdbW7qcRzdhPlPPo1IglesAEJROHnmT3eU2EhooOU/iU7/1dJlH/oeOFl3Z96wjJ71/g/NFgVeJaG+eIUsW05jv0y0Qusbj2v74P2i/wXO3/YkRPCW+PAYc0UCfaB/4ppSTvM+qCbUkrQ6RTgxrBhHnSnnjB9/3sps1rCb7aSuZYB6u1QCzN6odvnbkVdYhsglzbDirXeiLFnwnDa9/0oE4wkPTbQFzOzHbb8uPSZ/GPbRK8VkjtNUrezEKmV/dEaddLIocQDH4RnOaUPGKE/h+ABSnG8Vh8zoARDw85cR2/dGYODAERYwuANj1rRu6V1g3h9MLxv2AYds+zksHOMp7nLsLoURST5BXtZO7t+SmCphU5dCKHsYF1bcrrvg="
+
