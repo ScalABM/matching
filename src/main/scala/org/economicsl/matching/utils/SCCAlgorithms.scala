@@ -1,5 +1,4 @@
-package org.economicsl.matching.onesided
-
+package org.economicsl.matching.utils
 
 object SCCAlgorithms {
 
