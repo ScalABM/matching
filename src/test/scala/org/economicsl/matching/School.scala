@@ -13,11 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching.twosided.manytoone
+package org.economicsl.matching
 
 import java.util.UUID
 
-import org.economicsl.matching.{Predicate, Preferences}
+import org.economicsl.matching.twosided.manytoone.Quota
 
 
 case class School(uuid: UUID, quality: Double, quota: Int, isAcceptable: (Student) => Boolean, ordering: Ordering[Student])

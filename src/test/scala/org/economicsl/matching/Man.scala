@@ -13,18 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching.twosided.onetoone
+package org.economicsl.matching
 
 import java.util.UUID
 
-import org.economicsl.matching.Preferences
+
+case class Man(uuid: UUID, quality: Long, ordering: Ordering[Woman]) extends Proposer with Preferences[Woman]
 
 
-case class Woman(uuid: UUID, quality: Long, ordering: Ordering[Man]) extends Preferences[Man]
+object Man {
 
-
-object Woman {
-
-  val manByQuality: Ordering[Man] = Ordering.by(m => m.quality)
+  implicit val womanByQuality: Ordering[Woman] = Ordering.by(w => w.quality)
 
 }

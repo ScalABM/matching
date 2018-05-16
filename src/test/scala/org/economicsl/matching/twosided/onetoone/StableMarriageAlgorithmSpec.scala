@@ -17,6 +17,7 @@ package org.economicsl.matching.twosided.onetoone
 
 import java.util.UUID
 
+import org.economicsl.matching.{Man, Woman}
 import org.scalatest.FlatSpec
 
 import scala.util.{Failure, Success}

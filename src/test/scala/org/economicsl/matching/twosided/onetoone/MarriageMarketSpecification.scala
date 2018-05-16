@@ -15,37 +15,15 @@ limitations under the License.
 */
 package org.economicsl.matching.twosided.onetoone
 
-import org.scalacheck.{Gen, Prop, Properties}
+import org.economicsl.matching.{Man, MatchingTestSpecification, Woman}
+import org.scalacheck.{Prop, Properties}
 
 import scala.util.{Failure, Success}
 
 
-object MarriageMarketSpecification extends Properties("marriage-market") {
+object MarriageMarketSpecification extends Properties("marriage-market") with MatchingTestSpecification {
 
-  val randomMan: Gen[Man] = {
-    for {
-      id <- Gen.uuid
-      quality <- Gen.posNum[Long]
-    } yield Man(id, quality, Man.womanByQuality)
-  }
-
-  val randomWoman: Gen[Woman] = {
-    for {
-      id <- Gen.uuid
-      quality <- Gen.posNum[Long]
-    } yield Woman(id, quality, Woman.manByQuality)
-  }
-
-  val randomUnmatchedSets: Gen[(Set[Man], Set[Woman])] = Gen.sized {
-    size => for {
-      nm <- Gen.choose(0, size)
-      ms <- Gen.containerOfN[Set, Man](nm, randomMan)
-      nw <- Gen.choose(0, size)
-      ws <- Gen.containerOfN[Set, Woman](nw, randomWoman)
-    } yield (ms, ws)
-  }
-
-  property("all men and women are matched") = Prop.forAll(randomUnmatchedSets) {
+  property("all men and women are matched") = Prop.forAll(unmatchedMenAndWomen) {
     case (ms, ws) =>
       val result = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
       result match {
@@ -56,7 +34,7 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
       }
   }
 
-  property("matching should be stable") = Prop.forAll(randomUnmatchedSets) {
+  property("matching should be stable") = Prop.forAll(unmatchedMenAndWomen) {
     case (ms, ws) =>
       val result = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
       result match {
