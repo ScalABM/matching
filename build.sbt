@@ -37,6 +37,11 @@ lazy val Performance = config("performance") extend Test
 // finally define the full project build settings
 lazy val core = (project in file(".")).
   settings(commonSettings: _*).
+  configs(Test).
+  settings(
+    testOptions += Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "2"),
+    parallelExecution in Test := false
+  ).
   configs(Functional).
   settings(inConfig(Functional)(Defaults.testSettings): _*).
   settings(

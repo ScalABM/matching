@@ -20,52 +20,64 @@ import org.scalacheck.{Gen, Prop, Properties}
 
 object SCCAlgorithmsSpecification extends Properties("scc-specification") {
 
-  val singleton: Gen[(Int, Set[Int])] = {
-    for {
-      n <- Gen.posNum[Int]
-    } yield (n, Set.empty)
-  }
-
   val loop: Gen[(Int, Set[Int])] = {
     for {
       n <- Gen.posNum[Int]
     } yield (n, Set(n))
   }
 
-  val emptyGraph: Gen[Map[Int, Set[Int]]] = Gen.sized {
-    size => Gen.mapOfN(size, singleton)
+  val emptyGraphOfSizeN: Gen[DirectedGraph] = Gen.sized {
+    size => DirectedGraph.empty(size)
   }
 
-  val graphWithOnlyLoops: Gen[Map[Int, Set[Int]]] = Gen.sized {
-    size => Gen.mapOfN(size, loop)
+  val pathOfLengthN: Gen[DirectedGraph] = Gen.sized {
+    size => DirectedGraph.path(size)
   }
 
-  val cycleOfLengthN: Gen[Map[Int, Set[Int]]] = Gen.sized {
-    @annotation.tailrec
-    def loop(c: List[Int], m: Map[Int, Set[Int]]): Map[Int, Set[Int]] = c match {
-      case from :: to :: ns => loop(to :: ns, m + (from -> Set(to)))
-      case last :: Nil =>
-        m + (last -> Set(1))
-      case Nil => m
-    }
-
-    size => loop((1 to size).toList, Map.empty)
+  val loops: Gen[DirectedGraph] = Gen.sized {
+    size => DirectedGraph.loops(size)
   }
 
-  property("an empty graph should have zero strongly connected components") = Prop.forAll(emptyGraph) { graph =>
+  val cycleOfLengthN: Gen[DirectedGraph] = Gen.sized {
+    size => DirectedGraph.cycle(size)
+  }
+
+  val sinkOfSizeN: Gen[DirectedGraph] = Gen.sized {
+    size => DirectedGraph.sink(size)
+  }
+
+  val sourceOfSizeN: Gen[DirectedGraph] = Gen.sized {
+    size => DirectedGraph.source(size)
+  }
+
+  property("a vertex is strongly connected to itself") = Prop.forAll(emptyGraphOfSizeN) { graph =>
     val sccs = SCCAlgorithms.tarjan(graph)
-    sccs.isEmpty
+    sccs.equals(graph.vertices.map(v => Set(v)))
   }
 
-  property("every self-loop is considered a strongly connected component") = Prop.forAll(graphWithOnlyLoops) { graph =>
+  property("a chain of length N should have N strongly connected components") = Prop.forAll(pathOfLengthN) { graph =>
     val sccs = SCCAlgorithms.tarjan(graph)
-    graph.size == sccs.size
+    sccs.equals(graph.vertices.map(v => Set(v)))
   }
 
   property("every non-empty cycle should have a single strongly connected component") = Prop.forAll(cycleOfLengthN) { graph =>
     val sccs = SCCAlgorithms.tarjan(graph)
-    sccs.isEmpty || (sccs.size == 1)
+    (sccs.size <= 1) && sccs.headOption.forall(scc => scc.equals(graph.vertices))
   }
 
+  property("a sink of size N should have N strongly connected components") = Prop.forAll(sinkOfSizeN) { graph =>
+    val sccs = SCCAlgorithms.tarjan(graph)
+    sccs.equals(graph.vertices.map(v => Set(v)))
+  }
+
+  property("a source of size N should have N strongly connected components") = Prop.forAll(sourceOfSizeN) { graph =>
+    val sccs = SCCAlgorithms.tarjan(graph)
+    sccs.equals(graph.vertices.map(v => Set(v)))
+  }
+
+  property("every self-loop is considered a strongly connected component") = Prop.forAll(loops) { graph =>
+    val sccs = SCCAlgorithms.tarjan(graph)
+    sccs.equals(graph.vertices.map(v => Set(v)))
+  }
 
 }
