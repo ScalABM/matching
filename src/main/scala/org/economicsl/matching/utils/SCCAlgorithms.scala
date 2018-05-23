@@ -23,7 +23,7 @@ object SCCAlgorithms {
   def tarjan[A](graph: DirectedGraph[A]): Set[StronglyConnectedComponent[A]] = {
 
     // todo: make this function tail-recursive!
-    def strongConnect(state: State, v: A): State = {
+    def strongConnect(state: TarjanState, v: A): TarjanState = {
       state.visited(v) match {
         case None =>
           graph.get(v) match {
@@ -39,13 +39,13 @@ object SCCAlgorithms {
 
     case class Visited(index: Int, lowLink: Int)
 
-    case class State(visited: Map[A, Option[Visited]],
-                     next: Int,
-                     stack: List[A],
-                     stacked: Map[A, Boolean],
-                     components: Set[StronglyConnectedComponent[A]]) {
+    case class TarjanState(visited: Map[A, Option[Visited]],
+                           next: Int,
+                           stack: List[A],
+                           stacked: Map[A, Boolean],
+                           components: Set[StronglyConnectedComponent[A]]) {
 
-      def collectScc(v: A): State = {
+      def collectScc(v: A): TarjanState = {
 
         @annotation.tailrec
         def pop(stack: List[A], nodes: Set[A]): (List[A], Set[A]) = stack match {
@@ -64,14 +64,14 @@ object SCCAlgorithms {
         }
       }
 
-      def visit(v: A): State = copy(
+      def visit(v: A): TarjanState = copy(
         visited = visited.updated(v, Some(Visited(next, next))),
         next = next + 1,
         stack = v :: stack,
         stacked = stacked.updated(v, true)
       )
 
-      def updateLowLink(v: A, w: A): State = {
+      def updateLowLink(v: A, w: A): TarjanState = {
         (visited(v), visited(w)) match {
           case (Some(vv), Some(ww)) if stacked(w) && (ww.lowLink < vv.lowLink) =>
             copy(visited.updated(v, Some(vv.copy(lowLink = ww.lowLink))))
@@ -82,8 +82,8 @@ object SCCAlgorithms {
     }
 
     object State {
-      def initial: State = {
-        State(Map.empty.withDefaultValue(None), 0, List.empty, Map.empty.withDefaultValue(false), Set.empty)
+      def initial: TarjanState = {
+        TarjanState(Map.empty.withDefaultValue(None), 0, List.empty, Map.empty.withDefaultValue(false), Set.empty)
       }
     }
 
