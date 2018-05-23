@@ -18,21 +18,22 @@ package org.economicsl.matching.utils
 
 object SCCAlgorithms {
 
-  type Component = Set[Int]
+  type StronglyConnectedComponent[A] = Set[A]
 
-  def tarjan(graph: DirectedGraph): Set[Component] = {
+  def tarjan[A](graph: DirectedGraph[A]): Set[StronglyConnectedComponent[A]] = {
 
     // todo: make this function tail-recursive!
-    def strongConnect(state: State, v: Int): State = {
+    def strongConnect(state: State, v: A): State = {
       state.visited(v) match {
         case None =>
           graph.get(v) match {
             case Some(successors) =>
-              if (successors.nonEmpty) {
-                successors.foldLeft(state.visit(v))((s, w) => strongConnect(s, w).updateLowLink(v, w)).collectScc(v)
-              } else {
-                state.visit(v).collectScc(v)
-              }
+              successors.foldLeft(state.visit(v))((s, w) => strongConnect(s, w).updateLowLink(v, w)).collectScc(v)
+              //if (successors.nonEmpty) {
+              //  successors.foldLeft(state.visit(v))((s, w) => strongConnect(s, w).updateLowLink(v, w)).collectScc(v)
+              //} else {
+              //  state.visit(v).collectScc(v)
+              //}
             case None =>  // vertex v is a sink!
               state
           }
@@ -41,59 +42,59 @@ object SCCAlgorithms {
       }
     }
 
+    case class Visited(index: Int, lowLink: Int)
+
+    case class State(visited: Map[A, Option[Visited]],
+                     next: Int,
+                     stack: List[A],
+                     stacked: Map[A, Boolean],
+                     components: Set[StronglyConnectedComponent[A]]) {
+
+      def collectScc(v: A): State = {
+
+        @annotation.tailrec
+        def pop(stack: List[A], nodes: Set[A]): (List[A], Set[A]) = stack match {
+          case Nil => (stack, nodes)
+          case h :: t =>
+            if (h == v) (t, nodes + h) else pop(t, nodes + h)
+        }
+
+        // If v is a root node, pop the stack and generate an SCC
+        visited(v).get match {
+          case Visited(index, lowLink) if index == lowLink =>
+            val (residualStack, nodes) = pop(stack, Set.empty)
+            val stackedLessScc = nodes.foldLeft(stacked)((s, w) => s.updated(w, false))
+            copy(stack = residualStack, stacked = stackedLessScc, components = components + nodes)
+          case _ => this
+        }
+      }
+
+      def visit(v: A): State = copy(
+        visited = visited.updated(v, Some(Visited(next, next))),
+        next = next + 1,
+        stack = v :: stack,
+        stacked = stacked.updated(v, true)
+      )
+
+      def updateLowLink(v: A, w: A): State = {
+        (visited(v), visited(w)) match {
+          case (Some(vv), Some(ww)) if stacked(w) && (ww.lowLink < vv.lowLink) =>
+            copy(visited.updated(v, Some(vv.copy(lowLink = ww.lowLink))))
+          case _ => this
+        }
+      }
+
+    }
+
+    object State {
+      def initial: State = {
+        State(Map.empty.withDefaultValue(None), 0, List.empty, Map.empty.withDefaultValue(false), Set.empty)
+      }
+    }
+
     val finalState = graph.vertices.foldLeft(State.initial)((state, v) => strongConnect(state, v))
-    finalState.results
+    finalState.components
 
-  }
-
-  private case class Visited(index: Int, lowLink: Int)
-
-  private case class State(visited: Map[Int, Option[Visited]],
-                           next: Int,
-                           stack: List[Int],
-                           stacked: Map[Int, Boolean],
-                           results: Set[Component]) {
-
-    def collectScc(v: Int): State = {
-
-      @annotation.tailrec
-      def pop(stack: List[Int], nodes: Set[Int]): (List[Int], Set[Int]) = stack match {
-        case Nil => (stack, nodes)
-        case h :: t =>
-          if (h == v) (t, nodes + h) else pop(t, nodes + h)
-      }
-
-      // If v is a root node, pop the stack and generate an SCC
-      visited(v).get match {
-        case Visited(index, lowLink) if index == lowLink =>
-          val (residualStack, nodes) = pop(stack, Set.empty)
-          val stackedLessScc = nodes.foldLeft(stacked)((s, w) => s.updated(w, false))
-          copy(stack = residualStack, stacked = stackedLessScc, results = results + nodes)
-        case _ => this
-      }
-    }
-
-    def visit(i: Int): State = copy(
-      visited = visited.updated(i, Some(Visited(next, next))),
-      next = next + 1,
-      stack = i :: stack,
-      stacked = stacked.updated(i, true)
-    )
-
-    def updateLowLink(v: Int, w: Int): State = {
-      (visited(v), visited(w)) match {
-        case (Some(vv), Some(ww)) if stacked(w) && (ww.lowLink < vv.lowLink) =>
-          copy(visited.updated(v, Some(vv.copy(lowLink = ww.lowLink))))
-        case _ => this
-      }
-    }
-
-  }
-
-  private object State {
-    def initial: State = {
-      State(Map.empty.withDefaultValue(None), 0, List.empty, Map.empty.withDefaultValue(false), Set.empty)
-    }
   }
 
 }

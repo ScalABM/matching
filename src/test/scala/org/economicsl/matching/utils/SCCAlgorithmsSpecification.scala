@@ -20,42 +20,27 @@ import org.scalacheck.{Gen, Prop, Properties}
 
 object SCCAlgorithmsSpecification extends Properties("scc-specification") {
 
-  val loop: Gen[(Int, Set[Int])] = {
-    for {
-      n <- Gen.posNum[Int]
-    } yield (n, Set(n))
-  }
-
-  val emptyGraphOfSizeN: Gen[DirectedGraph] = Gen.sized {
-    size => DirectedGraph.empty(size)
-  }
-
-  val pathOfLengthN: Gen[DirectedGraph] = Gen.sized {
+  val pathOfLengthN: Gen[DirectedGraph[Int]] = Gen.sized {
     size => DirectedGraph.path(size)
   }
 
-  val loops: Gen[DirectedGraph] = Gen.sized {
+  val loops: Gen[DirectedGraph[Int]] = Gen.sized {
     size => DirectedGraph.loops(size)
   }
 
-  val cycleOfLengthN: Gen[DirectedGraph] = Gen.sized {
+  val cycleOfLengthN: Gen[DirectedGraph[Int]] = Gen.sized {
     size => DirectedGraph.cycle(size)
   }
 
-  val sinkOfSizeN: Gen[DirectedGraph] = Gen.sized {
+  val sinkOfSizeN: Gen[DirectedGraph[Int]] = Gen.sized {
     size => DirectedGraph.sink(size)
   }
 
-  val sourceOfSizeN: Gen[DirectedGraph] = Gen.sized {
+  val sourceOfSizeN: Gen[DirectedGraph[Int]] = Gen.sized {
     size => DirectedGraph.source(size)
   }
 
-  property("a vertex is strongly connected to itself") = Prop.forAll(emptyGraphOfSizeN) { graph =>
-    val sccs = SCCAlgorithms.tarjan(graph)
-    sccs.equals(graph.vertices.map(v => Set(v)))
-  }
-
-  property("a chain of length N should have N strongly connected components") = Prop.forAll(pathOfLengthN) { graph =>
+  property("a path of length N should have N strongly connected components") = Prop.forAll(pathOfLengthN) { graph =>
     val sccs = SCCAlgorithms.tarjan(graph)
     sccs.equals(graph.vertices.map(v => Set(v)))
   }

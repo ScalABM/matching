@@ -16,22 +16,48 @@ limitations under the License.
 package org.economicsl.matching.utils
 
 
-class DirectedGraph(adjacencyLists: Map[Int, Set[Int]]) {
+class DirectedGraph[A] private(val vertices: Set[A], graph: Map[A, Set[A]]) {
 
-  def get(v: Int): Option[Set[Int]] = {
-    adjacencyLists.get(v)
+  lazy val isEmpty: Boolean = {
+    graph.forall{ case (_, vs) => vs.isEmpty }
   }
 
-  def vertices: Set[Int] = {
-    adjacencyLists.keySet
+  lazy val nonEmpty: Boolean = {
+    !isEmpty
   }
 
-  def subGraph(vertices: Set[Int]): DirectedGraph = {
-    val subGraphAdjacencyLists = vertices.foldLeft(Map.empty[Int, Set[Int]]){ case (subGraph, v) =>
-      val successors = adjacencyLists.getOrElse(v, Set.empty)
-      subGraph + (v -> successors.intersect(vertices))
+  def + (edge: (A, A)): DirectedGraph[A] = {
+    val (from, to) = edge
+    val successors = graph.getOrElse(from, Set.empty)
+    new DirectedGraph(vertices + from + to, graph.updated(from, successors + to).updated(to, graph.getOrElse(to, Set.empty)))
+  }
+
+  def apply(v: A): Set[A] = {
+    graph(v)
+  }
+
+  def get(v: A): Option[Set[A]] = {
+    graph.get(v)
+  }
+
+  def subGraph(vertices: Set[A]): DirectedGraph[A] = {
+    val subGraph = vertices.foldLeft(Map.empty[A, Set[A]]){ case (m, v) =>
+      val successors = graph.getOrElse(v, Set.empty)
+      m + (v -> successors.intersect(vertices))
     }
-    new DirectedGraph(subGraphAdjacencyLists)
+    new DirectedGraph(vertices, subGraph)
+  }
+
+  def stronglyConnectedComponents: Set[Set[A]] = {
+    SCCAlgorithms.tarjan(this)
+  }
+
+  def stronglyConnectedSubGraphs: Set[DirectedGraph[A]] = {
+    stronglyConnectedComponents.map(cc => subGraph(cc))
+  }
+
+  override def toString: String = {
+    graph.toString()
   }
 
 }
@@ -39,76 +65,58 @@ class DirectedGraph(adjacencyLists: Map[Int, Set[Int]]) {
 
 object DirectedGraph {
 
-  def cycle(length: Int): DirectedGraph = {
+  def cycle(length: Int): DirectedGraph[Int] = {
     @annotation.tailrec
-    def loop(vertices: List[Int], adjacencyLists: Map[Int, Set[Int]]): Map[Int, Set[Int]] = vertices match {
-      case from :: to :: ns => loop(to :: ns, adjacencyLists + (from -> Set(to)))
-      case last :: Nil =>
-        adjacencyLists + (last -> Set(0))
-      case Nil => adjacencyLists
+    def loop(vertices: List[Int], graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
+      case from :: to :: ns => loop(to :: ns, graph + (from -> to))
+      case last :: Nil => graph + (last -> 0)
+      case Nil => graph
     }
-    new DirectedGraph(loop((0 until length).toList, Map.empty))
+    loop((0 until length).toList, DirectedGraph.empty)
   }
 
-  def empty: DirectedGraph = {
-    new DirectedGraph(Map.empty)
+  def empty[A]: DirectedGraph[A] = {
+    new DirectedGraph(Set.empty, Map.empty)
   }
 
-  def empty(size: Int): DirectedGraph = {
+  def loop(v: Int): DirectedGraph[Int] = {
+    DirectedGraph.empty + (v -> v)
+  }
+
+  def loops(size: Int): DirectedGraph[Int] = {
     @annotation.tailrec
-    def loop(vertices: List[Int], adjacencyLists: Map[Int, Set[Int]]): Map[Int, Set[Int]] = vertices match {
-      case v :: vs =>
-        loop(vs, adjacencyLists + (v -> Set.empty))
-      case _ =>
-        adjacencyLists
+    def loop(vertices: List[Int], graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
+      case v :: vs => loop(vs, graph + (v -> v))
+      case Nil => graph
     }
-    new DirectedGraph(loop((0 until size).toList, Map.empty))
+    loop((0 until size).toList, DirectedGraph.empty)
   }
 
-  def loop(v: Int): DirectedGraph = {
-    new DirectedGraph(Map(v -> Set(v)))
-  }
-
-  def loops(size: Int): DirectedGraph = {
+  def path(length: Int): DirectedGraph[Int] = {
     @annotation.tailrec
-    def loop(vertices: List[Int], adjacencyLists: Map[Int, Set[Int]]): Map[Int, Set[Int]] = vertices match {
-      case v :: vs =>
-        loop(vs, adjacencyLists + (v -> Set(v)))
-      case Nil =>
-        adjacencyLists
+    def loop(vertices: List[Int], graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
+      case from :: to :: ns => loop(to :: ns, graph + (from -> to))
+      case _ => graph
     }
-    new DirectedGraph(loop((0 until size).toList, Map.empty))
+    loop((0 until length).toList, DirectedGraph.empty)
   }
 
-  def path(length: Int): DirectedGraph = {
+  def sink(size: Int): DirectedGraph[Int] = {
     @annotation.tailrec
-    def loop(vertices: List[Int], adjacencyLists: Map[Int, Set[Int]]): Map[Int, Set[Int]] = vertices match {
-      case from :: to :: ns =>
-        loop(to :: ns, adjacencyLists + (from -> Set(to)))
-      case _ =>
-        adjacencyLists
+    def loop(vertices: List[Int],graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
+      case v :: vs => loop(vs, graph + (v -> 0))
+      case Nil => graph
     }
-    new DirectedGraph(loop((0 until length).toList, Map.empty))
+    loop((0 until size).toList, DirectedGraph.empty)
   }
 
-  def sink(size: Int): DirectedGraph = {
+  def source(size: Int): DirectedGraph[Int] = {
     @annotation.tailrec
-    def loop(vertices: List[Int], adjacencyLists: Map[Int, Set[Int]]): Map[Int, Set[Int]] = vertices match {
-      case v :: vs =>
-        loop(vs, adjacencyLists + (v -> Set(0)))
-      case Nil => adjacencyLists
+    def loop(vertices: List[Int], graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
+      case v :: vs => loop(vs, graph + (0 -> v))
+      case Nil => graph
     }
-    new DirectedGraph(loop((0 until size).toList, Map.empty))
-  }
-
-  def source(size: Int): DirectedGraph = {
-    @annotation.tailrec
-    def loop(vertices: List[Int], adjacencyLists: Map[Int, Set[Int]]): Map[Int, Set[Int]] = vertices match {
-      case v :: vs =>
-        loop(vs, adjacencyLists + (0 -> Set(v)))
-      case Nil => adjacencyLists
-    }
-    new DirectedGraph(loop((0 until size).toList, Map.empty))
+    loop((0 until size).toList, DirectedGraph.empty)
   }
 
 }

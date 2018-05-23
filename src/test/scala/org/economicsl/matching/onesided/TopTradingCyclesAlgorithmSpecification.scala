@@ -25,10 +25,10 @@ object TopTradingCyclesAlgorithmSpecification extends Properties("ttc-specificat
     size => Gen.mapOfN(size, for { x <- student; y <- school } yield (x, y))
   }
 
-  property("if agents have identical preferences, then final allocation should be the initial allocation") = Prop.forAll(allocations) { initial =>
-    val result = new TopTradingCyclesAlgorithm()(initial)
-    result.equals(initial)
-  }
+  //property("if agents have identical preferences, then final allocation should be the initial allocation") = Prop.forAll(allocations) { initial =>
+   // val result = new TopTradingCyclesAlgorithm()(initial)
+   // result.equals(initial)
+  //}
 
 
 }
