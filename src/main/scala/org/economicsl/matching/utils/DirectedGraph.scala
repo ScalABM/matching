@@ -16,7 +16,12 @@ limitations under the License.
 package org.economicsl.matching.utils
 
 
-class DirectedGraph[A] private(val vertices: Set[A], graph: Map[A, Set[A]]) {
+/** Class for modeling directed graphs.
+  *
+  * @param graph internal representation of the graph that maps each vertex to its successors.
+  * @tparam A the vertex type.
+  */
+class DirectedGraph[A] private(graph: Map[A, Set[A]]) {
 
   lazy val isEmpty: Boolean = {
     graph.forall{ case (_, vs) => vs.isEmpty }
@@ -26,34 +31,50 @@ class DirectedGraph[A] private(val vertices: Set[A], graph: Map[A, Set[A]]) {
     !isEmpty
   }
 
-  def + (edge: (A, A)): DirectedGraph[A] = {
-    val (from, to) = edge
-    val successors = graph.getOrElse(from, Set.empty)
-    new DirectedGraph(vertices + from + to, graph.updated(from, successors + to).updated(to, graph.getOrElse(to, Set.empty)))
+  lazy val stronglyConnectedComponents: Set[Set[A]] = {
+    SCCAlgorithms.tarjan(this)
   }
 
-  def apply(v: A): Set[A] = {
+  lazy val stronglyConnectedSubGraphs: Set[DirectedGraph[A]] = {
+    stronglyConnectedComponents.map(cc => subGraph(cc))
+  }
+
+  lazy val vertices: Set[A] = {
+    graph.keySet
+  }
+
+  final def + (v: A): DirectedGraph[A] = {
+    if (graph.contains(v)) {
+      this
+    } else {
+      new DirectedGraph(graph + (v -> Set.empty))
+    }
+  }
+
+  final def + (edge: Edge[A]): DirectedGraph[A] = {
+    val withAdditionalEdge = graph.get(edge.from) match {
+      case Some(successors) =>
+        new DirectedGraph(graph.updated(edge.from, successors + edge.to))
+      case None =>
+        new DirectedGraph(graph + (edge.from -> Set(edge.to)))
+    }
+    withAdditionalEdge + edge.to
+  }
+
+  final def apply(v: A): Set[A] = {
     graph(v)
   }
 
-  def get(v: A): Option[Set[A]] = {
+  final def get(v: A): Option[Set[A]] = {
     graph.get(v)
   }
 
-  def subGraph(vertices: Set[A]): DirectedGraph[A] = {
+  final def subGraph(vertices: Set[A]): DirectedGraph[A] = {
     val subGraph = vertices.foldLeft(Map.empty[A, Set[A]]){ case (m, v) =>
       val successors = graph.getOrElse(v, Set.empty)
       m + (v -> successors.intersect(vertices))
     }
-    new DirectedGraph(vertices, subGraph)
-  }
-
-  def stronglyConnectedComponents: Set[Set[A]] = {
-    SCCAlgorithms.tarjan(this)
-  }
-
-  def stronglyConnectedSubGraphs: Set[DirectedGraph[A]] = {
-    stronglyConnectedComponents.map(cc => subGraph(cc))
+    new DirectedGraph(subGraph)
   }
 
   override def toString: String = {
@@ -68,25 +89,25 @@ object DirectedGraph {
   def cycle(length: Int): DirectedGraph[Int] = {
     @annotation.tailrec
     def loop(vertices: List[Int], graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
-      case from :: to :: ns => loop(to :: ns, graph + (from -> to))
-      case last :: Nil => graph + (last -> 0)
+      case from :: to :: ns => loop(to :: ns, graph + Edge(from, to))
+      case last :: Nil => graph + Edge(last, 0)
       case Nil => graph
     }
     loop((0 until length).toList, DirectedGraph.empty)
   }
 
   def empty[A]: DirectedGraph[A] = {
-    new DirectedGraph(Set.empty, Map.empty)
+    new DirectedGraph(Map.empty)
   }
 
   def loop(v: Int): DirectedGraph[Int] = {
-    DirectedGraph.empty + (v -> v)
+    DirectedGraph.empty[Int] + Edge(v, v)
   }
 
   def loops(size: Int): DirectedGraph[Int] = {
     @annotation.tailrec
     def loop(vertices: List[Int], graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
-      case v :: vs => loop(vs, graph + (v -> v))
+      case v :: vs => loop(vs, graph + Edge(v, v))
       case Nil => graph
     }
     loop((0 until size).toList, DirectedGraph.empty)
@@ -95,7 +116,7 @@ object DirectedGraph {
   def path(length: Int): DirectedGraph[Int] = {
     @annotation.tailrec
     def loop(vertices: List[Int], graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
-      case from :: to :: ns => loop(to :: ns, graph + (from -> to))
+      case from :: to :: ns => loop(to :: ns, graph + Edge(from, to))
       case _ => graph
     }
     loop((0 until length).toList, DirectedGraph.empty)
@@ -104,7 +125,7 @@ object DirectedGraph {
   def sink(size: Int): DirectedGraph[Int] = {
     @annotation.tailrec
     def loop(vertices: List[Int],graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
-      case v :: vs => loop(vs, graph + (v -> 0))
+      case v :: vs => loop(vs, graph + Edge(v, 0))
       case Nil => graph
     }
     loop((0 until size).toList, DirectedGraph.empty)
@@ -113,7 +134,7 @@ object DirectedGraph {
   def source(size: Int): DirectedGraph[Int] = {
     @annotation.tailrec
     def loop(vertices: List[Int], graph: DirectedGraph[Int]): DirectedGraph[Int] = vertices match {
-      case v :: vs => loop(vs, graph + (0 -> v))
+      case v :: vs => loop(vs, graph + Edge(0, v))
       case Nil => graph
     }
     loop((0 until size).toList, DirectedGraph.empty)

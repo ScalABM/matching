@@ -13,21 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package org.economicsl.matching
-
-import java.util.UUID
+package org.economicsl.matching.utils
 
 
-case class Student(uuid: UUID, gpa: Double, isAcceptable: School => Boolean, ordering: Ordering[School])
-  extends Proposer with Predicate[School] with Preferences[School]
-
-
-object Student {
-
-  implicit val schoolByQuality: Ordering[School] = Ordering.by(school => school.quality)
-
-  val anySchoolIsAcceptable: School => Boolean = {
-    _ => true
-  }
-
-}
+/** Class representing a directed edge form an `A` to another `A`.
+  *
+  * @param from starting vertex.
+  * @param to ending vertex.
+  * @tparam A type of vertex.
+  */
+case class Edge[A](from: A, to: A)

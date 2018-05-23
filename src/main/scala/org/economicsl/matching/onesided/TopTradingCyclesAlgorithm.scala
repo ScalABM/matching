@@ -16,7 +16,7 @@ limitations under the License.
 package org.economicsl.matching.onesided
 
 import org.economicsl.matching.Preferences
-import org.economicsl.matching.utils.DirectedGraph
+import org.economicsl.matching.utils.{DirectedGraph, Edge}
 
 
 class TopTradingCyclesAlgorithm[A <: Preferences[B], B]
@@ -27,13 +27,14 @@ class TopTradingCyclesAlgorithm[A <: Preferences[B], B]
     @annotation.tailrec
     def loop(current: Allocation[A, B], result: Allocation[A, B]): Allocation[A, B] = {
       val preferredTradingPartners = identifyPreferredTradingPartners(current)
+      assert(preferredTradingPartners.nonEmpty)
       val (tradingCycles, residualTradingPartners) = partitionTradingPartners(preferredTradingPartners)
       val reallocation = reallocate(tradingCycles, current)
       if (residualTradingPartners.isEmpty) {
-        reallocation
+        reallocation.foldLeft(result)(_ + _)
       } else {
         val residualAllocation = current.filter{ case (a, _) => residualTradingPartners.contains(a) }
-        loop(residualAllocation, result.foldLeft(reallocation)(_ + _))
+        loop(residualAllocation, reallocation.foldLeft(result)(_ + _))
       }
     }
 
@@ -47,24 +48,25 @@ class TopTradingCyclesAlgorithm[A <: Preferences[B], B]
 
   private[this] def identifyPreferredTradingPartners(allocation: Allocation[A, B]): PreferredTradingPartners = {
     @annotation.tailrec
-    def loop(current: Allocation[A, B], graph: PreferredTradingPartners): PreferredTradingPartners = {
-      current.headOption match {
+    def loop(agents: Set[A], graph: PreferredTradingPartners): PreferredTradingPartners = {
+      agents.headOption match {
         case None =>
           graph
-        case Some((a, _)) =>
+        case Some(a) =>
           val (preferredTradingPartner, _) = allocation.maxBy { case (_, b) => b }(a.ordering)
-          loop(current - a, graph + (a -> preferredTradingPartner))
+          loop(agents - a, graph + Edge(a, preferredTradingPartner))
       }
     }
-    loop(allocation, DirectedGraph.empty)
+    loop(allocation.keySet, DirectedGraph.empty)
   }
 
-  /** Finds all of the trading cycles in the top-trading graph.
+  /** Partitions the graph of preferred trading partners into a collection of disjoint trading cycles and a collection
+    * of agents that are not participating in any trading cycle.
     *
-    * @param graph
+    * @param graph a graph mapping each agent to its most preferred trading partner.
     * @return
-    * @note finding all trading cycles in the top trading graph is equivalent to finding all strongly connected
-    *       components of the top trading graph.
+    * @note finding all trading cycles in the preferred trading partners graph is equivalent to finding all of the
+    *       graph's strongly connected components.
     */
   private[this] def partitionTradingPartners(graph: PreferredTradingPartners): (TradingCycles, ResidualTradingPartners) = {
     val (tradingCycles, emptySubGraphs) = graph.stronglyConnectedSubGraphs.partition(subGraph => subGraph.nonEmpty)
