@@ -26,7 +26,7 @@ object TopTradingCyclesAlgorithmSpecification extends Properties("ttc-specificat
   }
 
   property("if agents have identical preferences, then final allocation should be the initial allocation") = Prop.forAll(allocations) { initial =>
-    val result = new TopTradingCyclesAlgorithm()(initial)
+    val result = TopTradingCyclesAlgorithm(initial)
     result.equals(initial)
   }
 

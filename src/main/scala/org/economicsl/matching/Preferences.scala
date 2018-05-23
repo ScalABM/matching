@@ -27,3 +27,17 @@ trait Preferences[A] {
   def ordering: Ordering[A]
 
 }
+
+
+object Preferences {
+
+  /** Create an `Ordering` over type `A` based on the order in which elements of type `A` appear in a given list.
+    *
+    * @tparam A the type over which the `Ordering` should be defined.
+    * @return an `Ordering[A]` based on the order in which elements appear in a given `List[A]`.
+    */
+  def fromList[A]: List[A] => Ordering[A] = {
+    list => Ordering.by[A, Int](a => list.reverse.indexOf(a)).reverse
+  }
+
+}

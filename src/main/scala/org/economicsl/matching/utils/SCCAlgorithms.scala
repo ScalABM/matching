@@ -29,11 +29,6 @@ object SCCAlgorithms {
           graph.get(v) match {
             case Some(successors) =>
               successors.foldLeft(state.visit(v))((s, w) => strongConnect(s, w).updateLowLink(v, w)).collectScc(v)
-              //if (successors.nonEmpty) {
-              //  successors.foldLeft(state.visit(v))((s, w) => strongConnect(s, w).updateLowLink(v, w)).collectScc(v)
-              //} else {
-              //  state.visit(v).collectScc(v)
-              //}
             case None =>  // vertex v is a sink!
               state
           }

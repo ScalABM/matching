@@ -19,14 +19,19 @@ import org.economicsl.matching.Preferences
 import org.economicsl.matching.utils.{DirectedGraph, Edge}
 
 
-class TopTradingCyclesAlgorithm[A <: Preferences[B], B]
-    extends (Allocation[A, B] => Allocation[A, B]) {
+/** Implements the top-trading cycles (TTC) algorithm for trading indivisible items without using "money."
+  *
+  * @note the resulting allocation is core stable meaning that no subset (or coalition) of agents can find a feasible
+  *       allocation that makes members of the coalition better off.  The TTC algorithm is also "truthful" in that it
+  *       is a weakly dominant strategy for all agents to truthfully report their preferences.
+  */
+object TopTradingCyclesAlgorithm {
 
-  def apply(initial: Allocation[A, B]): Allocation[A, B] = {
+  def apply[A <: Preferences[B], B](initial: Allocation[A, B]): Allocation[A, B] = {
 
     @annotation.tailrec
     def loop(current: Allocation[A, B], result: Allocation[A, B]): Allocation[A, B] = {
-      val preferredTradingPartners = identifyPreferredTradingPartners(current)
+      val preferredTradingPartners = identifyTradingPartners(current)
       assert(preferredTradingPartners.nonEmpty)
       val (tradingCycles, residualTradingPartners) = partitionTradingPartners(preferredTradingPartners)
       val reallocation = reallocate(tradingCycles, current)
@@ -42,13 +47,12 @@ class TopTradingCyclesAlgorithm[A <: Preferences[B], B]
   }
 
   /* Private implementation details */
-  private[this] type TradingCycles = Set[DirectedGraph[A]]
-  private[this] type ResidualTradingPartners = Set[A]
-  private[this] type PreferredTradingPartners = DirectedGraph[A]
+  private[this] type TradingCycles[A <: Preferences[_]] = Set[DirectedGraph[A]]
+  private[this] type PreferredTradingPartners[A <: Preferences[_]] = DirectedGraph[A]
 
-  private[this] def identifyPreferredTradingPartners(allocation: Allocation[A, B]): PreferredTradingPartners = {
+  private[this] def identifyTradingPartners[A <: Preferences[B], B](allocation: Allocation[A, B]) = {
     @annotation.tailrec
-    def loop(agents: Set[A], graph: PreferredTradingPartners): PreferredTradingPartners = {
+    def loop(agents: Set[A], graph: PreferredTradingPartners[A]): PreferredTradingPartners[A] = {
       agents.headOption match {
         case None =>
           graph
@@ -57,7 +61,7 @@ class TopTradingCyclesAlgorithm[A <: Preferences[B], B]
           loop(agents - a, graph + Edge(a, preferredTradingPartner))
       }
     }
-    loop(allocation.keySet, DirectedGraph.empty)
+    loop(allocation.keySet, DirectedGraph.empty[A])
   }
 
   /** Partitions the graph of preferred trading partners into a collection of disjoint trading cycles and a collection
@@ -68,19 +72,19 @@ class TopTradingCyclesAlgorithm[A <: Preferences[B], B]
     * @note finding all trading cycles in the preferred trading partners graph is equivalent to finding all of the
     *       graph's strongly connected components.
     */
-  private[this] def partitionTradingPartners(graph: PreferredTradingPartners): (TradingCycles, ResidualTradingPartners) = {
+  private[this] def partitionTradingPartners[A <: Preferences[_]](graph: PreferredTradingPartners[A]) = {
     val (tradingCycles, emptySubGraphs) = graph.stronglyConnectedSubGraphs.partition(subGraph => subGraph.nonEmpty)
     val residualTradingPartners = emptySubGraphs.flatMap(subGraph => subGraph.vertices)
     (tradingCycles, residualTradingPartners)
   }
 
-  /** Re-allocate an initial allocation based on a collection of top-trading cycles.
+  /** Use a collection of trading cycles to re-allocate an initial allocation.
     *
     * @param tradingCycles a top trading cycles defining sequences of trades.
     * @param initial the initial allocation.
     * @return a new allocation.
     */
-  private[this] def reallocate(tradingCycles: TradingCycles, initial: Allocation[A, B]): Allocation[A, B] = {
+  private[this] def reallocate[A <: Preferences[B], B](tradingCycles: TradingCycles[A], initial: Allocation[A, B]) = {
     tradingCycles.aggregate(Map.empty[A, B])(
       { case (allocation, g) => g.vertices.foldLeft(allocation){ case (m, a) => m + (a -> initial(g(a).head)) } },
       { case (m1, m2) => m2.foldLeft(m1)(_ + _) }  // OK because keys are unique!
