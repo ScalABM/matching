@@ -21,7 +21,7 @@ package org.economicsl.matching.utils
   * @param graph internal representation of the graph that maps each vertex to its successors.
   * @tparam A the vertex type.
   */
-class DirectedGraph[A] private(graph: Map[A, Set[A]]) {
+private[matching] class DirectedGraph[A] private(graph: Map[A, Set[A]]) {
 
   lazy val isEmpty: Boolean = {
     graph.forall{ case (_, vs) => vs.isEmpty }

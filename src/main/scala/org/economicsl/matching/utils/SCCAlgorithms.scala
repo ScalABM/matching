@@ -29,7 +29,7 @@ object SCCAlgorithms {
           graph.get(v) match {
             case Some(successors) =>
               successors.foldLeft(state.visit(v))((s, w) => strongConnect(s, w).updateLowLink(v, w)).collectScc(v)
-            case None =>  // vertex v is a sink!
+            case None =>
               state
           }
         case Some(_) =>
@@ -48,18 +48,18 @@ object SCCAlgorithms {
       def collectScc(v: A): TarjanState = {
 
         @annotation.tailrec
-        def pop(stack: List[A], nodes: Set[A]): (List[A], Set[A]) = stack match {
-          case Nil => (stack, nodes)
+        def popComponent(stack: List[A], component: Set[A]): (List[A], Set[A]) = stack match {
+          case Nil => (stack, component)
           case h :: t =>
-            if (h == v) (t, nodes + h) else pop(t, nodes + h)
+            if (h == v) (t, component + h) else popComponent(t, component + h)
         }
 
         // If v is a root node, pop the stack and generate an SCC
         visited(v).get match {
           case Visited(index, lowLink) if index == lowLink =>
-            val (residualStack, nodes) = pop(stack, Set.empty)
-            val stackedLessScc = nodes.foldLeft(stacked)((s, w) => s.updated(w, false))
-            copy(stack = residualStack, stacked = stackedLessScc, components = components + nodes)
+            val (residualStack, component) = popComponent(stack, Set.empty)
+            val stackedLessScc = component.foldLeft(stacked)((s, w) => s.updated(w, false))
+            copy(stack = residualStack, stacked = stackedLessScc, components = components + component)
           case _ => this
         }
       }
