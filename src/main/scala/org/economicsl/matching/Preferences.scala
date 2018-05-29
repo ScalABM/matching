@@ -21,9 +21,9 @@ package org.economicsl.matching
   * @tparam A the type over which the `Ordering` is defined.
   * @note any `Ordering` implies a `max` operator that can be used as an `operator` to compare two `Tradable` instances.
   */
-trait Preferences[A] {
+trait Preferences[-A] {
 
   /** An `Ordering` defined over a particular type of `A`. */
-  def ordering: Ordering[A]
+  def ordering[B <: A]: Ordering[B]
 
 }
