@@ -15,64 +15,64 @@ limitations under the License.
 */
 package org.economicsl.matching
 
+import cats.data.State
 import org.economicsl.core.Price
 import org.economicsl.matching.onetoone.DeferredAcceptanceAlgorithm
 import org.scalacheck.{Gen, Prop, Properties}
-
-import scala.collection.immutable.HashSet
 
 
 object HouseMarketSpecification extends Properties("housing-market") {
 
   // this generator should exist in esl-core!
-  val priceGen: Gen[Price] = {
+  def price: Gen[Price] = {
     for {
-      value <- Gen.choose(100000, 1000000)
+      value <- Gen.posNum[Long]
     } yield Price(value)
   }
 
-  val houseGen: Gen[House] = {
+  val house: Gen[House] = {
     for {
-      id <- Gen.uuid
-      quality <- Gen.choose(1, 100)
-    } yield House(id, quality)
+      uuid <- Gen.uuid
+      quality <- Gen.posNum[Int]
+    } yield House(uuid, quality)
   }
 
-  val houseListingGen: Gen[HouseListing] = {
+  val houseListing: Gen[HouseListing] = {
     for {
-      id <- Gen.uuid
-      issuer <-  Gen.posNum[Long]
-      price <-  priceGen
-      house <- houseGen
-    } yield HouseListing(id, issuer, price, house)
+      uuid <- Gen.uuid
+      issuer <-  Gen.uuid
+      price <-  price
+      house <- house
+    } yield HouseListing(uuid, issuer, price, house)
   }
 
-  val housePurchaseOfferGen: Gen[HousePurchaseOffer] = {
+  val housePurchaseOffer: Gen[HousePurchaseOffer] = {
     for {
-      id <- Gen.uuid
-      issuer <- Gen.posNum[Long]
-      price <- priceGen
-    } yield HousePurchaseOffer(id, issuer, price)
+      uuid <- Gen.uuid
+      issuer <- Gen.uuid
+      price <- price
+    } yield HousePurchaseOffer(uuid, issuer, price)
   }
 
-  val housePurchaseOffers: Gen[HashSet[HousePurchaseOffer]] = Gen.sized {
-    n => Gen.containerOfN[HashSet, HousePurchaseOffer](n, housePurchaseOfferGen)
+  def unMatched: Gen[(Set[HousePurchaseOffer], Set[HouseListing])] = Gen.sized {
+    size => for {
+      offers <- Gen.containerOfN[Set, HousePurchaseOffer](size, housePurchaseOffer)
+      listing <- Gen.containerOfN[Set, HouseListing](size, houseListing)
+    } yield (offers, listing)
+
   }
 
-  val houseListings: Gen[HashSet[HouseListing]] = Gen.sized {
-    n => Gen.containerOfN[HashSet, HouseListing](n, houseListingGen)
+  property("matching should be incentive-compatible") = Prop.forAll(unMatched) { unmatched =>
+        val result = State(new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing]).run(unmatched)
+        val ((_, _), matching) = result.value
+        matching.matches.forall{ case (offer, listing) => offer.price >= listing.price }
   }
 
-  property("matching should be incentive-compatible") = Prop.forAll(housePurchaseOffers, houseListings) {
-    case (offers, listings) =>
-      val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
-      matching.matches.forall{ case (offer, listing) => offer.price >= listing.price }
-  }
-
-  property("matching should be stable") =  Prop.forAll(housePurchaseOffers, houseListings) {
-    case (offers, listings) =>
-      val ((_, _), matching) = (new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing])(offers, listings)
-      offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
+  property("matching should be stable") =  Prop.forAll(unMatched) { unmatched =>
+    val result = State(new DeferredAcceptanceAlgorithm[HousePurchaseOffer, HouseListing]).run(unmatched)
+    val ((_, _), matching) = result.value
+    val (offers, listings) = unmatched
+    offers.forall(o => listings.forall(l => !matching.isBlockedBy(l -> o)))
   }
 
 }

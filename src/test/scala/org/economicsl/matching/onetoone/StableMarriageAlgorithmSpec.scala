@@ -25,20 +25,23 @@ import scala.util.{Failure, Success}
 class StableMarriageAlgorithmSpec extends FlatSpec {
 
   "The stable marriage algorithm applied to two empty sets" should "successfully return an empty matching." in {
-    val result = (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set.empty[Woman])
+    val unmatched = (Set.empty[Man], Set.empty[Woman])
+    val result = (new StableMarriageAlgorithm[Man, Woman])(unmatched)
     result match {
-      case Success(((_, _), matching)) =>
+      case ((_, _), Success(matching)) =>
         assert(matching.isEmpty)
-      case Failure(_) =>
+      case ((_,_), Failure(_)) =>
         false
     }
   }
 
   "The stable matching algorithm applied to sets of different sizes" should "return a failure." in {
-    val result1 = (new StableMarriageAlgorithm[Man, Woman])(Set(Man(UUID.randomUUID(), 42, Man.womanByQuality)), Set.empty[Woman])
+    val unmatched1 = (Set(Man(UUID.randomUUID(), 42, Man.womanByQuality)), Set.empty[Woman])
+    val ((_, _), result1) = (new StableMarriageAlgorithm[Man, Woman])(unmatched1)
     assert(result1.isFailure)
 
-    val result2 = (new StableMarriageAlgorithm[Man, Woman])(Set.empty[Man], Set(Woman(UUID.randomUUID(), 42, Woman.manByQuality)))
+    val unmatched2 = (Set.empty[Man], Set(Woman(UUID.randomUUID(), 42, Woman.manByQuality)))
+    val ((_, _), result2) = (new StableMarriageAlgorithm[Man, Woman])(unmatched2)
     assert(result2.isFailure)
   }
 

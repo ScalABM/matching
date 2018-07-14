@@ -15,6 +15,8 @@ limitations under the License.
 */
 package org.economicsl.matching.onetoone
 
+
+import cats.data.State
 import org.scalacheck.{Gen, Prop, Properties}
 
 import scala.util.{Failure, Success}
@@ -46,22 +48,24 @@ object MarriageMarketSpecification extends Properties("marriage-market") {
   }
 
   property("all men and women are matched") = Prop.forAll(randomUnmatchedSets) {
-    case (ms, ws) =>
-      val result = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
-      result match {
-        case Success(((unMatchedMs, unMatchedWs), matching)) =>
-          (ms.size == ws.size) && unMatchedMs.isEmpty && unMatchedWs.isEmpty && (matching.size == ms.size)
+    case unmatched @ (ms, ws) =>
+      val result = State(new StableMarriageAlgorithm[Man, Woman]).run(unmatched)
+      val ((unMatchedMs, unMatchedWs), matching) = result.value
+      matching match {
+        case Success(oneToOneMatching) =>
+          (ms.size == ws.size) && unMatchedMs.isEmpty && unMatchedWs.isEmpty && (oneToOneMatching.size == ms.size)
         case Failure(_) =>
           ms.size != ws.size
       }
   }
 
   property("matching should be stable") = Prop.forAll(randomUnmatchedSets) {
-    case (ms, ws) =>
-      val result = (new StableMarriageAlgorithm[Man, Woman])(ms, ws)
-      result match {
-        case Success(((_, _), matching)) =>
-          ms.forall(m => ws.forall(w => !matching.isBlockedBy(w -> m)))
+    case unmatched @ (ms, ws) =>
+      val result = State(new StableMarriageAlgorithm[Man, Woman]).run(unmatched)
+      val ((_, _), matching) = result.value
+      matching match {
+        case Success(oneToOneMatching) =>
+          ms.forall(m => ws.forall(w => !oneToOneMatching.isBlockedBy(w -> m)))
         case Failure(_) =>
           ms.size != ws.size
       }

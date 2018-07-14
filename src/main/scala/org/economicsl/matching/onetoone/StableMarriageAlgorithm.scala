@@ -38,15 +38,15 @@ import scala.util.{Failure, Success, Try}
   *      [[http://www.eecs.harvard.edu/cs286r/courses/fall09/papers/galeshapley.pdf ''Gale and Shapley (1962)'']].
   */
 class StableMarriageAlgorithm[M <: Proposer with Preferences[W], W <: Preferences[M]]
-  extends ((Set[M], Set[W]) => Try[((Set[M], Set[W]), OneToOneMatching[W, M])]) {
+  extends (((Set[M], Set[W])) => ((Set[M], Set[W]), Try[OneToOneMatching[W, M]])) {
 
   /** Compute a stable matching between two sets of equal size.
     *
-    * @param ms set of proposers to be matched.
-    * @param ws set of proposees to be matched.
+    * @param unmatched
     * @return a stable matching between proposees (`ws`) and proposers (`ms`).
     */
-  def apply(ms: Set[M], ws: Set[W]): Try[((Set[M], Set[W]), OneToOneMatching[W, M])] = {
+  def apply(unmatched: (Set[M], Set[W])): ((Set[M], Set[W]), Try[OneToOneMatching[W, M]]) = {
+    val (ms, ws) = unmatched
 
     @annotation.tailrec
     def accumulate(unMatchedMs: Set[M], matches: Map[W, M], rejected: Map[M, Set[W]]): (Set[M], Set[W], Map[W, M]) = {
@@ -74,10 +74,10 @@ class StableMarriageAlgorithm[M <: Proposer with Preferences[W], W <: Preference
 
     if (ms.size == ws.size) {
       val (unMatchedMs, unMatchedWs, matches) = accumulate(ms, Map.empty, Map.empty)
-      Success(((unMatchedMs, unMatchedWs), OneToOneMatching(matches)))
+      ((unMatchedMs, unMatchedWs), Success(OneToOneMatching(matches)))
     }
     else {
-      Failure(new IllegalArgumentException(s"The size of ms is ${ms.size} which does not equal the size of ws which is ${ws.size}!"))
+      ((ms, ws), Failure(new IllegalArgumentException(s"The size of ms is ${ms.size} which does not equal the size of ws which is ${ws.size}!")))
     }
 
   }

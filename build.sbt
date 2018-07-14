@@ -8,6 +8,7 @@ lazy val commonSettings = Seq(
   organizationHomepage := Some(url("https://economicsl.github.io/")),
   libraryDependencies ++= Seq(
     "org.scalactic" %% "scalactic" % "3.0.5",
+    "org.typelevel" %% "cats-core" % "1.1.0",
     "com.typesafe.akka" %% "akka-actor" % "2.5.6",
     "org.economicsl" %% "esl-core" % "0.1.0-SNAPSHOT"
   ),
@@ -22,7 +23,8 @@ lazy val commonSettings = Seq(
     "-language:reflectiveCalls",  // needed in order to enable structural (or duck) typing
     "-Xlint",
     "-Ywarn-unused-import",
-    "-Ywarn-dead-code"
+    "-Ywarn-dead-code",
+    "-Ypartial-unification"
   )
 )
 
